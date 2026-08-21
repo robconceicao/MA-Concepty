@@ -56,3 +56,16 @@ export async function removerCliente(id: string): Promise<void> {
   const { error } = await supabase.from(TABELA).delete().eq('id', id);
   if (error) throw new Error(traduzirErro(error));
 }
+
+/** Marca que o lembrete acabou de ser disparado no WhatsApp. */
+export async function registrarLembrete(id: string): Promise<Cliente> {
+  const { data, error } = await supabase
+    .from(TABELA)
+    .update({ ultimo_lembrete_em: new Date().toISOString() })
+    .eq('id', id)
+    .select('*')
+    .single();
+
+  if (error) throw new Error(traduzirErro(error));
+  return data as Cliente;
+}

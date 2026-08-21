@@ -9,12 +9,14 @@ type MockSpec = {
   /** Ha quantos dias foi a ultima aplicacao. */
   diasAtras: number;
   observacoes?: string;
+  /** Lembrete ja disparado hoje, para o estado aparecer no modo demonstracao. */
+  avisadaHoje?: boolean;
 };
 
 const SPECS: MockSpec[] = [
   { nome: 'Patrícia Nunes', whatsapp: '5541991112233', tecnica: 'fita_adesiva', diasAtras: 60, observacoes: 'Pele sensível à fita, usar hipoalergênica.' },
   { nome: 'Marina Lopes', whatsapp: '5531976543210', tecnica: 'microesferas', diasAtras: 72, observacoes: 'Avisar sempre pela manhã.' },
-  { nome: 'Carolina Prado', whatsapp: '5511912345678', tecnica: 'ponto_americano', diasAtras: 55, observacoes: 'Cabelo 60cm, cor 8.1.' },
+  { nome: 'Carolina Prado', whatsapp: '5511912345678', tecnica: 'ponto_americano', diasAtras: 55, observacoes: 'Cabelo 60cm, cor 8.1.', avisadaHoje: true },
   { nome: 'Juliana Ferraz', whatsapp: '5521998877665', tecnica: 'queratina', diasAtras: 85 },
   { nome: 'Bianca Rezende', whatsapp: '5511955443322', tecnica: 'fita_adesiva', diasAtras: 45 },
   { nome: 'Ana Beatriz Moraes', whatsapp: '5511987654321', tecnica: 'fita_adesiva', diasAtras: 5, observacoes: 'Prefere horário à tarde.' },
@@ -45,6 +47,7 @@ export const CLIENTES_MOCK: Cliente[] = SPECS.map((spec, index) => {
     ultima_aplicacao: ultimaAplicacao,
     observacoes: spec.observacoes ?? null,
     ativo: true,
+    ultimo_lembrete_em: spec.avisadaHoje ? agora : null,
     data_retorno: toISODate(calcularDataRetorno(ultimaAplicacao, spec.tecnica)),
     created_at: agora,
     updated_at: agora,

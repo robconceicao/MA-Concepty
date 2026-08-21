@@ -14,6 +14,8 @@ export type Cliente = {
   ultima_aplicacao: string; // date (YYYY-MM-DD)
   observacoes: string | null;
   ativo: boolean;
+  /** Momento do ultimo lembrete disparado no WhatsApp. */
+  ultimo_lembrete_em: string | null;
   /** Coluna gerada pelo banco: ultima_aplicacao + dias da tecnica. */
   data_retorno: string; // date (YYYY-MM-DD)
   created_at: string;
@@ -24,6 +26,7 @@ export type Cliente = {
 export type ClienteComStatus = Cliente & {
   dias_restantes: number;
   status: ReturnStatus;
+  avisada_hoje: boolean;
 };
 
 /** Payload de criacao/edicao vindo do formulario. */

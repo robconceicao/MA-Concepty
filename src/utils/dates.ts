@@ -59,3 +59,16 @@ export function descreverPrazo(dias: number): string {
   if (dias === -1) return 'Atrasada há 1 dia';
   return `Atrasada há ${Math.abs(dias)} dias`;
 }
+
+/** O timestamp caiu no dia de hoje, no fuso do aparelho? */
+export function foiHoje(iso: string | null | undefined): boolean {
+  if (!iso) return false;
+  const data = new Date(iso);
+  if (Number.isNaN(data.getTime())) return false;
+  const agora = new Date();
+  return (
+    data.getFullYear() === agora.getFullYear() &&
+    data.getMonth() === agora.getMonth() &&
+    data.getDate() === agora.getDate()
+  );
+}

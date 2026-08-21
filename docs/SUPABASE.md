@@ -33,6 +33,10 @@ Tempo total: uns 10 minutos. Tudo isso cabe no plano gratuito.
 Para conferir: menu lateral → **Table Editor**. A tabela `clientes` deve estar
 lá, com as colunas `data_retorno`, `tecnica`, `ultima_aplicacao` e companhia.
 
+> **Já tinha rodado uma versão anterior do script?** Rode o `schema.sql` de novo.
+> Ele acrescenta a coluna `ultimo_lembrete_em` (controle de lembretes enviados)
+> sem tocar nas clientes já cadastradas.
+
 ---
 
 ## 3. Criar o seu usuário

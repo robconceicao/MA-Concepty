@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AvisoErro } from '@/components/AvisoErro';
+import { AvisosCard } from '@/components/AvisosCard';
 import { BrandMark } from '@/components/BrandMark';
 import { Button } from '@/components/Button';
 import { ClienteCard } from '@/components/ClienteCard';
@@ -23,7 +24,7 @@ import { colors, spacing, typography } from '@/constants/theme';
 import { MODO_DEMO } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth';
 import { useClientesStore, useResumo, type FiltroStatus } from '@/store/clientes';
-import { enviarLembrete } from '@/utils/whatsapp';
+import { useNotificacoesStore } from '@/store/notificacoes';
 
 const MAX_AVISOS = 4;
 
@@ -35,7 +36,14 @@ export default function DashboardScreen() {
   const carregando = useClientesStore((state) => state.carregando);
   const atualizando = useClientesStore((state) => state.atualizando);
   const erro = useClientesStore((state) => state.erro);
+  const enviarLembrete = useClientesStore((state) => state.enviarLembrete);
   const sair = useAuthStore((state) => state.sair);
+  const clientes = useClientesStore((state) => state.clientes);
+  const avisosSuportados = useNotificacoesStore((state) => state.suportado);
+  const avisosAtivados = useNotificacoesStore((state) => state.ativado);
+  const avisosAgendados = useNotificacoesStore((state) => state.agendados);
+  const avisosOcupado = useNotificacoesStore((state) => state.ocupado);
+  const alternarAvisos = useNotificacoesStore((state) => state.alternar);
 
   function abrirLista(filtro: FiltroStatus) {
     setFiltro(filtro);
@@ -99,25 +107,43 @@ export default function DashboardScreen() {
           />
         </View>
 
+        {avisosSuportados && (
+          <AvisosCard
+            ativado={avisosAtivados}
+            agendados={avisosAgendados}
+            ocupado={avisosOcupado}
+            onAlternar={() => alternarAvisos(clientes)}
+          />
+        )}
+
         <View style={styles.secao}>
           <View style={styles.secaoHeader}>
             <Text style={styles.secaoTitulo}>Avisar hoje</Text>
-            {resumo.avisos.length > MAX_AVISOS && (
-              <Text style={styles.secaoContador}>
-                {MAX_AVISOS} de {resumo.avisos.length}
-              </Text>
-            )}
+            <Text style={styles.secaoContador}>
+              {resumo.avisos.length > MAX_AVISOS && `${MAX_AVISOS} de ${resumo.avisos.length}`}
+              {resumo.avisos.length > MAX_AVISOS && resumo.avisadasHoje > 0 && ' · '}
+              {resumo.avisadasHoje > 0 && `${resumo.avisadasHoje} já avisada${resumo.avisadasHoje > 1 ? 's' : ''}`}
+            </Text>
           </View>
 
           {carregando ? (
             <ActivityIndicator color={colors.primary} style={styles.spinner} />
           ) : avisos.length === 0 ? (
             <EmptyState
-              titulo={resumo.total === 0 ? 'Nenhuma cliente ainda' : 'Tudo em dia'}
+              icon={resumo.avisadasHoje > 0 ? 'checkmark-done-outline' : 'sparkles-outline'}
+              titulo={
+                resumo.total === 0
+                  ? 'Nenhuma cliente ainda'
+                  : resumo.avisadasHoje > 0
+                    ? 'Todas avisadas por hoje'
+                    : 'Tudo em dia'
+              }
               descricao={
                 resumo.total === 0
                   ? 'Cadastre a primeira cliente na aba Clientes.'
-                  : 'Nenhuma cliente entra na janela de retorno nos próximos 10 dias.'
+                  : resumo.avisadasHoje > 0
+                    ? `${resumo.avisadasHoje} lembrete${resumo.avisadasHoje > 1 ? 's' : ''} enviado${resumo.avisadasHoje > 1 ? 's' : ''} hoje.`
+                    : 'Nenhuma cliente entra na janela de retorno nos próximos 10 dias.'
               }
             />
           ) : (

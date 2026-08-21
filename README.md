@@ -84,6 +84,7 @@ src/
   constants/techniques.ts  tecnicas e prazos de manutencao
   lib/supabase.ts       cliente Supabase, modo demo e traducao de erros
   services/clientes.ts  queries de cliente (select/insert/update/delete)
+  services/notificacoes.ts  agendamento dos avisos no aparelho
   store/auth.ts         sessao e login
   store/                estado global (Zustand)
   types/cliente.ts      tipos do dominio
@@ -158,3 +159,40 @@ O link usado e `https://wa.me/<numero>?text=<mensagem>`, e nao o esquema
 declara-lo no manifesto, enquanto o `wa.me` e um app link ja verificado pelo
 proprio WhatsApp. Com o app instalado ele abre a conversa; sem o app, cai no
 WhatsApp Web. O esquema `whatsapp://` continua como segunda tentativa.
+
+## Controle de lembretes enviados
+
+Cada disparo grava o horario em `clientes.ultimo_lembrete_em`. A partir dai:
+
+- o botao da cliente vira **"Avisada hoje"**, e um novo toque pede confirmacao
+  antes de mandar de novo;
+- quem ja foi avisada sai da lista **"Avisar hoje"** do inicio, que passa a
+  mostrar quantas ja receberam o lembrete;
+- a virada do dia usa o fuso do aparelho (`foiHoje()` em `src/utils/dates.ts`);
+  a view `clientes_com_status` faz o mesmo calculo em `America/Sao_Paulo`,
+  porque o banco do Supabase roda em UTC.
+
+Se o registro falhar (a internet caiu depois que o WhatsApp abriu), o app marca
+localmente assim mesmo: o lembrete ja saiu, e travar a tela por causa disso
+seria pior.
+
+## Avisos no dia do retorno
+
+O card no inicio liga notificacoes **locais**, agendadas no proprio aparelho
+para as 9h do dia do retorno de cada cliente (`src/services/notificacoes.ts`).
+Tocar na notificacao abre a ficha da cliente.
+
+Escolhemos notificacao local, e nao push por servidor, porque resolve o mesmo
+problema sem nenhuma infraestrutura: nada de tokens, servidor de envio ou cron.
+A troca e que os avisos vivem no aparelho onde o app esta instalado — se o salao
+quiser receber em varios aparelhos, ou com o app desinstalado, ai sim seria
+preciso um servidor (Edge Function + `pg_cron` + Expo Push).
+
+A lista e reagendada do zero sempre que as clientes mudam, entao editar uma data
+ou excluir uma cliente nunca deixa aviso orfao. Sao agendados os 40 retornos mais
+proximos — o iOS guarda no maximo 64 notificacoes locais por app.
+
+> **Expo Go:** o agendamento local funciona, mas o Expo avisa que o suporte a
+> notificacoes no Expo Go e limitado (no Android, principalmente). Para o
+> comportamento definitivo, gere um dev build (`npx expo run:android`) ou um
+> build pelo EAS.

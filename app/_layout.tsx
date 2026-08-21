@@ -1,4 +1,5 @@
 import { useFonts } from 'expo-font';
+import * as Notifications from 'expo-notifications';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -7,8 +8,10 @@ import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { fontAssets, fonts } from '@/constants/fonts';
 import { colors } from '@/constants/theme';
+import { NOTIFICACOES_SUPORTADAS } from '@/services/notificacoes';
 import { useAuthStore } from '@/store/auth';
 import { useClientesStore } from '@/store/clientes';
+import { useNotificacoesStore } from '@/store/notificacoes';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   /* a splash já pode ter sido escondida */
@@ -37,6 +40,10 @@ export default function RootLayout() {
   const iniciando = useAuthStore((state) => state.iniciando);
   const carregarClientes = useClientesStore((state) => state.carregar);
   const limparClientes = useClientesStore((state) => state.limpar);
+  const clientes = useClientesStore((state) => state.clientes);
+  const iniciarAvisos = useNotificacoesStore((state) => state.inicializar);
+  const sincronizarAvisos = useNotificacoesStore((state) => state.sincronizar);
+  const router = useRouter();
 
   useEffect(() => inicializar(), [inicializar]);
 
@@ -45,6 +52,29 @@ export default function RootLayout() {
     if (sessao) carregarClientes();
     else limparClientes();
   }, [sessao, carregarClientes, limparClientes]);
+
+  useEffect(() => {
+    iniciarAvisos();
+  }, [iniciarAvisos]);
+
+  // Mudou a lista, mudou a data de algum retorno: os avisos sao reagendados.
+  useEffect(() => {
+    sincronizarAvisos(clientes);
+  }, [clientes, sincronizarAvisos]);
+
+  // Tocar na notificacao abre a ficha da cliente.
+  useEffect(() => {
+    if (!NOTIFICACOES_SUPORTADAS) return;
+    let ativo = true;
+    const assinatura = Notifications.addNotificationResponseReceivedListener((resposta) => {
+      const clienteId = resposta.notification.request.content.data?.clienteId;
+      if (ativo && typeof clienteId === 'string') router.push(`/cliente/${clienteId}`);
+    });
+    return () => {
+      ativo = false;
+      assinatura.remove();
+    };
+  }, [router]);
 
   useRotaProtegida();
 

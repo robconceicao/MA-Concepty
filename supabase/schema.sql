@@ -58,6 +58,9 @@ create table if not exists public.clientes (
   -- Arquivar sem perder o historico.
   ativo boolean not null default true,
 
+  -- Quando o ultimo lembrete foi disparado no WhatsApp.
+  ultimo_lembrete_em timestamptz,
+
   -- Data ideal de retorno, calculada pelo proprio banco.
   data_retorno date generated always as (
     ultima_aplicacao + public.dias_manutencao(tecnica)
@@ -71,9 +74,15 @@ create table if not exists public.clientes (
   constraint clientes_observacoes_check check (observacoes is null or char_length(observacoes) <= 1000)
 );
 
+-- Para quem ja rodou uma versao anterior deste script: acrescenta a coluna
+-- sem tocar nos dados existentes.
+alter table public.clientes
+  add column if not exists ultimo_lembrete_em timestamptz;
+
 comment on table  public.clientes is 'Clientes de mega hair e o controle de retorno para manutencao.';
 comment on column public.clientes.whatsapp is 'Apenas digitos, com DDI. Ex: 5511987654321.';
 comment on column public.clientes.data_retorno is 'ultima_aplicacao + dias da tecnica. Calculada pelo banco.';
+comment on column public.clientes.ultimo_lembrete_em is 'Ultimo disparo de lembrete no WhatsApp. Evita avisar a mesma cliente duas vezes no dia.';
 
 -- -----------------------------------------------------------------------------
 -- 3. updated_at automatico
@@ -108,25 +117,36 @@ create index if not exists clientes_user_nome_idx
 -- -----------------------------------------------------------------------------
 -- 5. Status do retorno (view)
 -- -----------------------------------------------------------------------------
--- Depende de current_date, entao vive numa view (nao pode ser coluna gerada).
+-- Depende da data de hoje, entao vive numa view (nao pode ser coluna gerada).
 --   atrasado  : data_retorno ja passou
 --   proximo   : faltam 10 dias ou menos
 --   no_prazo  : faltam mais de 10 dias
-create or replace view public.clientes_com_status
+-- O banco do Supabase roda em UTC; aqui o "hoje" e o de Sao Paulo, se nao a
+-- virada do dia aconteceria as 21h para o salao.
+-- O drop e necessario porque a view ganhou colunas novas: o create or replace
+-- so aceita acrescentar colunas no fim da lista.
+drop view if exists public.clientes_com_status;
+
+create view public.clientes_com_status
 with (security_invoker = true)
 as
 select
   c.*,
-  (c.data_retorno - current_date) as dias_restantes,
+  (c.data_retorno - (now() at time zone 'America/Sao_Paulo')::date) as dias_restantes,
   case
-    when c.data_retorno < current_date then 'atrasado'
-    when c.data_retorno - current_date <= 10 then 'proximo'
+    when c.data_retorno < (now() at time zone 'America/Sao_Paulo')::date then 'atrasado'
+    when c.data_retorno - (now() at time zone 'America/Sao_Paulo')::date <= 10 then 'proximo'
     else 'no_prazo'
-  end as status
+  end as status,
+  (
+    c.ultimo_lembrete_em is not null
+    and c.ultimo_lembrete_em >=
+      date_trunc('day', now() at time zone 'America/Sao_Paulo') at time zone 'America/Sao_Paulo'
+  ) as avisada_hoje
 from public.clientes c;
 
 comment on view public.clientes_com_status is
-  'Clientes + dias restantes e status (no_prazo / proximo / atrasado). security_invoker respeita o RLS de quem consulta.';
+  'Clientes + dias restantes, status (no_prazo / proximo / atrasado) e se o lembrete de hoje ja foi enviado. security_invoker respeita o RLS de quem consulta.';
 
 -- -----------------------------------------------------------------------------
 -- 6. Row Level Security

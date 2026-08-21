@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBadge } from '@/components/StatusBadge';
 import { TECHNIQUE_BY_ID } from '@/constants/techniques';
 import { colors, radius, shadow, spacing, statusColors, typography } from '@/constants/theme';
@@ -21,6 +21,22 @@ type Props = {
 export function ClienteCard({ cliente, onPress, onEnviarLembrete }: Props) {
   const tecnica = TECHNIQUE_BY_ID[cliente.tecnica];
   const cor = statusColors[cliente.status];
+
+  /** Ja avisada hoje: confirma antes de mandar de novo, para evitar o toque sem querer. */
+  function dispararLembrete() {
+    if (!cliente.avisadaHoje) {
+      onEnviarLembrete();
+      return;
+    }
+    Alert.alert(
+      'Já avisada hoje',
+      `${cliente.nome} recebeu o lembrete hoje. Enviar de novo?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Enviar de novo', onPress: onEnviarLembrete },
+      ]
+    );
+  }
 
   return (
     <View style={styles.card}>
@@ -62,13 +78,27 @@ export function ClienteCard({ cliente, onPress, onEnviarLembrete }: Props) {
           </View>
 
           <Pressable
-            onPress={onEnviarLembrete}
+            onPress={dispararLembrete}
             accessibilityRole="button"
-            accessibilityLabel={`Enviar lembrete para ${cliente.nome}`}
-            style={({ pressed }) => [styles.lembrete, pressed && styles.pressed]}
+            accessibilityLabel={
+              cliente.avisadaHoje
+                ? `${cliente.nome} já foi avisada hoje. Enviar lembrete de novo`
+                : `Enviar lembrete para ${cliente.nome}`
+            }
+            style={({ pressed }) => [
+              styles.lembrete,
+              cliente.avisadaHoje && styles.lembreteFeito,
+              pressed && styles.pressed,
+            ]}
           >
-            <Ionicons name="logo-whatsapp" size={16} color={colors.textInverse} />
-            <Text style={styles.lembreteLabel}>Enviar lembrete</Text>
+            <Ionicons
+              name={cliente.avisadaHoje ? 'checkmark-circle-outline' : 'logo-whatsapp'}
+              size={16}
+              color={cliente.avisadaHoje ? colors.textMuted : colors.textInverse}
+            />
+            <Text style={[styles.lembreteLabel, cliente.avisadaHoje && styles.lembreteLabelFeito]}>
+              {cliente.avisadaHoje ? 'Avisada hoje' : 'Enviar lembrete'}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -119,5 +149,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
   },
+  lembreteFeito: {
+    backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   lembreteLabel: { color: colors.textInverse, fontSize: 13, fontWeight: '600' },
+  lembreteLabelFeito: { color: colors.textMuted },
 });

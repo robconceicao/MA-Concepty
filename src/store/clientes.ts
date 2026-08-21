@@ -6,10 +6,12 @@ import {
   atualizarCliente,
   criarCliente,
   listarClientes,
+  registrarLembrete,
   removerCliente,
 } from '@/services/clientes';
 import type { Cliente, ClienteInput, ReturnStatus } from '@/types/cliente';
-import { calcularDataRetorno, diasAteRetorno, statusDoRetorno, toISODate } from '@/utils/dates';
+import { calcularDataRetorno, diasAteRetorno, foiHoje, statusDoRetorno, toISODate } from '@/utils/dates';
+import { abrirWhatsApp } from '@/utils/whatsapp';
 
 export type FiltroStatus = 'todas' | ReturnStatus;
 
@@ -17,6 +19,8 @@ export type FiltroStatus = 'todas' | ReturnStatus;
 export type ClienteView = Cliente & {
   diasRestantes: number;
   status: ReturnStatus;
+  /** O lembrete de hoje ja foi disparado para esta cliente. */
+  avisadaHoje: boolean;
 };
 
 type ClientesState = {
@@ -33,12 +37,19 @@ type ClientesState = {
   criar: (input: ClienteInput) => Promise<Cliente>;
   atualizar: (id: string, input: ClienteInput) => Promise<void>;
   remover: (id: string) => Promise<void>;
+  /** Abre o WhatsApp e, se o app abrir, registra o disparo. */
+  enviarLembrete: (cliente: ClienteView) => Promise<void>;
   limpar: () => void;
 };
 
 function comPrazo(cliente: Cliente): ClienteView {
   const diasRestantes = diasAteRetorno(cliente.data_retorno);
-  return { ...cliente, diasRestantes, status: statusDoRetorno(diasRestantes) };
+  return {
+    ...cliente,
+    diasRestantes,
+    status: statusDoRetorno(diasRestantes),
+    avisadaHoje: foiHoje(cliente.ultimo_lembrete_em),
+  };
 }
 
 function normalizar(texto: string): string {
@@ -61,6 +72,7 @@ function montarLocal(input: ClienteInput, base?: Cliente): Cliente {
     ultima_aplicacao: input.ultima_aplicacao,
     observacoes: input.observacoes?.trim() ? input.observacoes.trim() : null,
     ativo: base?.ativo ?? true,
+    ultimo_lembrete_em: base?.ultimo_lembrete_em ?? null,
     data_retorno: toISODate(calcularDataRetorno(input.ultima_aplicacao, input.tecnica)),
     created_at: base?.created_at ?? agora,
     updated_at: agora,
@@ -119,6 +131,29 @@ export const useClientesStore = create<ClientesState>((set, get) => ({
     set((state) => ({ clientes: state.clientes.filter((cliente) => cliente.id !== id) }));
   },
 
+  enviarLembrete: async (cliente) => {
+    const abriu = await abrirWhatsApp(cliente);
+    if (!abriu) return;
+
+    const agora = new Date().toISOString();
+    const aplicar = (marcado: Cliente) =>
+      set((state) => ({
+        clientes: state.clientes.map((item) => (item.id === cliente.id ? marcado : item)),
+      }));
+
+    if (MODO_DEMO) {
+      aplicar({ ...cliente, ultimo_lembrete_em: agora });
+      return;
+    }
+
+    try {
+      aplicar(await registrarLembrete(cliente.id));
+    } catch {
+      // O aviso ja foi para o WhatsApp; falhar em registrar nao pode travar a tela.
+      aplicar({ ...cliente, ultimo_lembrete_em: agora });
+    }
+  },
+
   limpar: () =>
     set({ clientes: MODO_DEMO ? CLIENTES_MOCK : [], busca: '', filtro: 'todas', erro: null }),
 }));
@@ -153,8 +188,10 @@ export type Resumo = {
   proximas: number;
   atrasadas: number;
   noPrazo: number;
-  /** Quem precisa de aviso: atrasadas e proximas, da mais urgente para a menos. */
+  /** Quem ainda precisa de aviso hoje: atrasadas e proximas que nao foram avisadas. */
   avisos: ClienteView[];
+  /** Quantas ja receberam o lembrete hoje. */
+  avisadasHoje: number;
 };
 
 export function useResumo(): Resumo {
@@ -167,7 +204,8 @@ export function useResumo(): Resumo {
       proximas: todas.filter((c) => c.status === 'proximo').length,
       atrasadas: todas.filter((c) => c.status === 'atrasado').length,
       noPrazo: todas.filter((c) => c.status === 'no_prazo').length,
-      avisos: todas.filter((c) => c.status !== 'no_prazo'),
+      avisos: todas.filter((c) => c.status !== 'no_prazo' && !c.avisadaHoje),
+      avisadasHoje: todas.filter((c) => c.avisadaHoje).length,
     };
   }, [clientes]);
 }

@@ -18,7 +18,6 @@ import { SearchField } from '@/components/SearchField';
 import { fonts } from '@/constants/fonts';
 import { colors, radius, shadow, spacing, typography } from '@/constants/theme';
 import { useClientesFiltradas, useClientesStore, useResumo } from '@/store/clientes';
-import { enviarLembrete } from '@/utils/whatsapp';
 
 export default function ClientesScreen() {
   const router = useRouter();
@@ -32,6 +31,7 @@ export default function ClientesScreen() {
   const carregando = useClientesStore((state) => state.carregando);
   const atualizando = useClientesStore((state) => state.atualizando);
   const erro = useClientesStore((state) => state.erro);
+  const enviarLembrete = useClientesStore((state) => state.enviarLembrete);
 
   const filtros: ChipOption[] = [
     { id: 'todas', label: 'Todas', count: resumo.total },
