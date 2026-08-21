@@ -52,11 +52,14 @@ carregada por `expo-font` no layout raiz.
 
 ## Banco de dados
 
-1. Crie o projeto em [supabase.com](https://supabase.com) (plano free).
+O passo a passo completo, com telas e solucao de problemas, esta em
+**[docs/SUPABASE.md](docs/SUPABASE.md)**. Em resumo:
+
+1. Crie o projeto em [supabase.com](https://supabase.com) (plano free, regiao Sao Paulo).
 2. SQL Editor > New query > cole `supabase/schema.sql` > Run.
-3. Authentication > Users > Add user (e-mail e senha do salao).
+3. Authentication > Users > Add user, confirmando o e-mail automaticamente.
 4. Opcional: `supabase/seed.sql` (troque o e-mail no topo) para popular exemplos.
-5. Project Settings > API: copie a URL e a anon key para o seu `.env`.
+5. Project Settings > API: copie a URL e a chave publica para o seu `.env`.
 
 O que o script cria:
 
@@ -108,7 +111,7 @@ npm run typecheck
 - [x] **Etapa 2** — modelagem do banco no Supabase (`supabase/schema.sql`)
 - [x] **Etapa 3** — telas (Dashboard, lista com busca e filtros, cadastro) com dados mockados
 - [x] **Etapa 4** — calculo de datas e integracao Supabase (login, CRUD e RLS)
-- [ ] **Etapa 5** — disparo do WhatsApp via `Linking`
+- [x] **Etapa 5** — disparo do WhatsApp via `Linking`
 
 ## Telas
 
@@ -140,3 +143,18 @@ Authentication > Users) e todo o resto vem do Supabase:
 **Modo demonstracao:** sem `.env`, o app abre direto (sem login) com os clientes
 de exemplo de `src/mocks/clientes.ts`, em memoria. Serve para navegar pelas
 telas antes de configurar o Supabase.
+
+## Lembrete no WhatsApp
+
+O botao "Enviar lembrete" abre o WhatsApp ja na conversa da cliente, com a
+mensagem pronta (`src/utils/whatsapp.ts`):
+
+> Ola, [Nome]! ✨ Passando para lembrar que esta chegando a hora da manutencao
+> do seu Mega Hair ([Tecnica]). Seu retorno ideal e ate o dia [Data]. Vamos
+> agendar? 🥰
+
+O link usado e `https://wa.me/<numero>?text=<mensagem>`, e nao o esquema
+`whatsapp://`: a partir do Android 11 abrir um esquema de outro app exige
+declara-lo no manifesto, enquanto o `wa.me` e um app link ja verificado pelo
+proprio WhatsApp. Com o app instalado ele abre a conversa; sem o app, cai no
+WhatsApp Web. O esquema `whatsapp://` continua como segunda tentativa.
