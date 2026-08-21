@@ -16,6 +16,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { TechniquePicker } from '@/components/TechniquePicker';
 import { TextField } from '@/components/TextField';
 import { fonts } from '@/constants/fonts';
+import { traduzirErro } from '@/lib/supabase';
 import { TECHNIQUE_BY_ID, type TechniqueId } from '@/constants/techniques';
 import { colors, radius, spacing, statusColors, typography } from '@/constants/theme';
 import { useCliente, useClientesStore } from '@/store/clientes';
@@ -55,6 +56,7 @@ export default function ClienteFormScreen() {
   );
   const [observacoes, setObservacoes] = useState(cliente?.observacoes ?? '');
   const [erros, setErros] = useState<Erros>({});
+  const [salvando, setSalvando] = useState(false);
 
   /** Previsao do retorno enquanto a ficha e preenchida. */
   const previsao = useMemo(() => {
@@ -74,8 +76,8 @@ export default function ClienteFormScreen() {
     return Object.keys(novosErros).length === 0;
   }
 
-  function salvar() {
-    if (!validar() || !tecnica) return;
+  async function salvar() {
+    if (!validar() || !tecnica || salvando) return;
 
     const dados = {
       nome,
@@ -85,10 +87,16 @@ export default function ClienteFormScreen() {
       observacoes,
     };
 
-    if (novo) criar(dados);
-    else atualizar(id, dados);
-
-    router.back();
+    setSalvando(true);
+    try {
+      if (novo) await criar(dados);
+      else await atualizar(id, dados);
+      router.back();
+    } catch (erro) {
+      Alert.alert('Não foi possível salvar', traduzirErro(erro));
+    } finally {
+      setSalvando(false);
+    }
   }
 
   function confirmarExclusao() {
@@ -97,9 +105,13 @@ export default function ClienteFormScreen() {
       {
         text: 'Excluir',
         style: 'destructive',
-        onPress: () => {
-          remover(id);
-          router.back();
+        onPress: async () => {
+          try {
+            await remover(id);
+            router.back();
+          } catch (erro) {
+            Alert.alert('Não foi possível excluir', traduzirErro(erro));
+          }
         },
       },
     ]);
@@ -180,7 +192,11 @@ export default function ClienteFormScreen() {
         />
 
         <View style={styles.acoes}>
-          <Button label={novo ? 'Cadastrar cliente' : 'Salvar alterações'} onPress={salvar} />
+          <Button
+            label={novo ? 'Cadastrar cliente' : 'Salvar alterações'}
+            onPress={salvar}
+            loading={salvando}
+          />
           {!novo && (
             <Button
               label="Excluir cliente"

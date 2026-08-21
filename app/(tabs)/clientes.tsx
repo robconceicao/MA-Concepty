@@ -1,7 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AvisoErro } from '@/components/AvisoErro';
 import { ClienteCard } from '@/components/ClienteCard';
 import { EmptyState } from '@/components/EmptyState';
 import { FilterChips, type ChipOption } from '@/components/FilterChips';
@@ -19,6 +28,10 @@ export default function ClientesScreen() {
   const filtro = useClientesStore((state) => state.filtro);
   const setBusca = useClientesStore((state) => state.setBusca);
   const setFiltro = useClientesStore((state) => state.setFiltro);
+  const carregar = useClientesStore((state) => state.carregar);
+  const carregando = useClientesStore((state) => state.carregando);
+  const atualizando = useClientesStore((state) => state.atualizando);
+  const erro = useClientesStore((state) => state.erro);
 
   const filtros: ChipOption[] = [
     { id: 'todas', label: 'Todas', count: resumo.total },
@@ -36,12 +49,20 @@ export default function ClientesScreen() {
         keyExtractor={(cliente) => cliente.id}
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={atualizando}
+            onRefresh={() => carregar({ silencioso: true })}
+            tintColor={colors.accent}
+          />
+        }
         ListHeaderComponent={
           <View style={styles.header}>
             <Text style={styles.titulo}>Clientes</Text>
             <Text style={styles.subtitulo}>
               {resumo.total} {resumo.total === 1 ? 'cadastrada' : 'cadastradas'}
             </Text>
+            {!!erro && <AvisoErro mensagem={erro} onTentarDeNovo={() => carregar()} />}
             <SearchField value={busca} onChangeText={setBusca} />
             <FilterChips options={filtros} value={filtro} onChange={setFiltro} />
           </View>
@@ -55,7 +76,9 @@ export default function ClientesScreen() {
         )}
         ItemSeparatorComponent={() => <View style={styles.separador} />}
         ListEmptyComponent={
-          semCadastro ? (
+          carregando ? (
+            <ActivityIndicator color={colors.primary} style={styles.spinner} />
+          ) : semCadastro ? (
             <EmptyState
               icon="person-add-outline"
               titulo="Nenhuma cliente ainda"
@@ -90,6 +113,7 @@ const styles = StyleSheet.create({
   titulo: { fontFamily: fonts.display, fontSize: 30, color: colors.text },
   subtitulo: { ...typography.caption, marginTop: -spacing.sm },
   separador: { height: spacing.md },
+  spinner: { marginVertical: spacing.xxl },
   fab: {
     position: 'absolute',
     right: spacing.lg,

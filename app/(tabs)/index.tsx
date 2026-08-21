@@ -2,8 +2,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AvisoErro } from '@/components/AvisoErro';
 import { BrandMark } from '@/components/BrandMark';
 import { Button } from '@/components/Button';
 import { ClienteCard } from '@/components/ClienteCard';
@@ -11,6 +20,8 @@ import { EmptyState } from '@/components/EmptyState';
 import { SummaryCard } from '@/components/SummaryCard';
 import { fonts } from '@/constants/fonts';
 import { colors, spacing, typography } from '@/constants/theme';
+import { MODO_DEMO } from '@/lib/supabase';
+import { useAuthStore } from '@/store/auth';
 import { useClientesStore, useResumo, type FiltroStatus } from '@/store/clientes';
 import { enviarLembrete } from '@/utils/whatsapp';
 
@@ -20,6 +31,11 @@ export default function DashboardScreen() {
   const router = useRouter();
   const resumo = useResumo();
   const setFiltro = useClientesStore((state) => state.setFiltro);
+  const carregar = useClientesStore((state) => state.carregar);
+  const carregando = useClientesStore((state) => state.carregando);
+  const atualizando = useClientesStore((state) => state.atualizando);
+  const erro = useClientesStore((state) => state.erro);
+  const sair = useAuthStore((state) => state.sair);
 
   function abrirLista(filtro: FiltroStatus) {
     setFiltro(filtro);
@@ -32,13 +48,38 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={atualizando}
+            onRefresh={() => carregar({ silencioso: true })}
+            tintColor={colors.accent}
+          />
+        }
+      >
         <View style={styles.header}>
-          <BrandMark width={132} />
+          <View style={styles.headerTopo}>
+            <BrandMark width={132} />
+            {!MODO_DEMO && (
+              <Pressable
+                onPress={sair}
+                accessibilityRole="button"
+                accessibilityLabel="Sair da conta"
+                hitSlop={10}
+                style={({ pressed }) => pressed && styles.pressed}
+              >
+                <Ionicons name="log-out-outline" size={22} color={colors.textMuted} />
+              </Pressable>
+            )}
+          </View>
           <Text style={styles.data}>{hoje}</Text>
         </View>
 
         <Text style={styles.titulo}>Manutenções</Text>
+
+        {!!erro && <AvisoErro mensagem={erro} onTentarDeNovo={() => carregar()} />}
 
         <View style={styles.resumo}>
           <SummaryCard valor={resumo.total} label="Clientes" onPress={() => abrirLista('todas')} />
@@ -68,10 +109,16 @@ export default function DashboardScreen() {
             )}
           </View>
 
-          {avisos.length === 0 ? (
+          {carregando ? (
+            <ActivityIndicator color={colors.primary} style={styles.spinner} />
+          ) : avisos.length === 0 ? (
             <EmptyState
-              titulo="Tudo em dia"
-              descricao="Nenhuma cliente entra na janela de retorno nos próximos 10 dias."
+              titulo={resumo.total === 0 ? 'Nenhuma cliente ainda' : 'Tudo em dia'}
+              descricao={
+                resumo.total === 0
+                  ? 'Cadastre a primeira cliente na aba Clientes.'
+                  : 'Nenhuma cliente entra na janela de retorno nos próximos 10 dias.'
+              }
             />
           ) : (
             <View style={styles.lista}>
@@ -102,6 +149,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   container: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.lg },
   header: { gap: spacing.xs },
+  headerTopo: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  pressed: { opacity: 0.6 },
   data: typography.caption,
   titulo: { fontFamily: fonts.display, fontSize: 30, color: colors.text, marginTop: spacing.xs },
   resumo: { flexDirection: 'row', gap: spacing.sm },
@@ -109,5 +158,6 @@ const styles = StyleSheet.create({
   secaoHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   secaoTitulo: { fontFamily: fonts.displayMedium, fontSize: 20, color: colors.text },
   secaoContador: typography.caption,
+  spinner: { marginVertical: spacing.xl },
   lista: { gap: spacing.md },
 });

@@ -1,13 +1,15 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
+import { MODO_DEMO, traduzirErro } from '@/lib/supabase';
 import { CLIENTES_MOCK } from '@/mocks/clientes';
-import type { Cliente, ClienteInput, ReturnStatus } from '@/types/cliente';
 import {
-  calcularDataRetorno,
-  diasAteRetorno,
-  statusDoRetorno,
-  toISODate,
-} from '@/utils/dates';
+  atualizarCliente,
+  criarCliente,
+  listarClientes,
+  removerCliente,
+} from '@/services/clientes';
+import type { Cliente, ClienteInput, ReturnStatus } from '@/types/cliente';
+import { calcularDataRetorno, diasAteRetorno, statusDoRetorno, toISODate } from '@/utils/dates';
 
 export type FiltroStatus = 'todas' | ReturnStatus;
 
@@ -19,13 +21,19 @@ export type ClienteView = Cliente & {
 
 type ClientesState = {
   clientes: Cliente[];
+  carregando: boolean;
+  /** Recarga disparada pelo puxar-para-atualizar. */
+  atualizando: boolean;
+  erro: string | null;
   busca: string;
   filtro: FiltroStatus;
   setBusca: (busca: string) => void;
   setFiltro: (filtro: FiltroStatus) => void;
-  criar: (input: ClienteInput) => Cliente;
-  atualizar: (id: string, input: ClienteInput) => void;
-  remover: (id: string) => void;
+  carregar: (opcoes?: { silencioso?: boolean }) => Promise<void>;
+  criar: (input: ClienteInput) => Promise<Cliente>;
+  atualizar: (id: string, input: ClienteInput) => Promise<void>;
+  remover: (id: string) => Promise<void>;
+  limpar: () => void;
 };
 
 function comPrazo(cliente: Cliente): ClienteView {
@@ -41,11 +49,12 @@ function normalizar(texto: string): string {
     .trim();
 }
 
-function montar(input: ClienteInput, base?: Cliente): Cliente {
+/** Monta a linha localmente. So o modo demonstracao usa isso. */
+function montarLocal(input: ClienteInput, base?: Cliente): Cliente {
   const agora = new Date().toISOString();
   return {
     id: base?.id ?? `local-${Date.now()}`,
-    user_id: base?.user_id ?? 'mock-user',
+    user_id: base?.user_id ?? 'demo',
     nome: input.nome.trim(),
     whatsapp: input.whatsapp,
     tecnica: input.tecnica,
@@ -58,29 +67,60 @@ function montar(input: ClienteInput, base?: Cliente): Cliente {
   };
 }
 
-/**
- * Etapa 3: tudo em memoria, a partir dos mocks.
- * Etapa 4: as mesmas acoes passam a falar com o Supabase.
- */
-export const useClientesStore = create<ClientesState>((set) => ({
-  clientes: CLIENTES_MOCK,
+export const useClientesStore = create<ClientesState>((set, get) => ({
+  clientes: MODO_DEMO ? CLIENTES_MOCK : [],
+  carregando: false,
+  atualizando: false,
+  erro: null,
   busca: '',
   filtro: 'todas',
+
   setBusca: (busca) => set({ busca }),
   setFiltro: (filtro) => set({ filtro }),
-  criar: (input) => {
-    const novo = montar(input);
+
+  carregar: async ({ silencioso = false } = {}) => {
+    if (MODO_DEMO) return;
+    set(silencioso ? { atualizando: true, erro: null } : { carregando: true, erro: null });
+    try {
+      const clientes = await listarClientes();
+      set({ clientes, carregando: false, atualizando: false });
+    } catch (erro) {
+      set({ erro: traduzirErro(erro), carregando: false, atualizando: false });
+    }
+  },
+
+  criar: async (input) => {
+    if (MODO_DEMO) {
+      const novo = montarLocal(input);
+      set((state) => ({ clientes: [novo, ...state.clientes] }));
+      return novo;
+    }
+    const novo = await criarCliente(input);
     set((state) => ({ clientes: [novo, ...state.clientes] }));
     return novo;
   },
-  atualizar: (id, input) =>
-    set((state) => ({
-      clientes: state.clientes.map((cliente) =>
-        cliente.id === id ? montar(input, cliente) : cliente
-      ),
-    })),
-  remover: (id) =>
-    set((state) => ({ clientes: state.clientes.filter((cliente) => cliente.id !== id) })),
+
+  atualizar: async (id, input) => {
+    const aplicar = (atualizado: Cliente) =>
+      set((state) => ({
+        clientes: state.clientes.map((cliente) => (cliente.id === id ? atualizado : cliente)),
+      }));
+
+    if (MODO_DEMO) {
+      const base = get().clientes.find((cliente) => cliente.id === id);
+      aplicar(montarLocal(input, base));
+      return;
+    }
+    aplicar(await atualizarCliente(id, input));
+  },
+
+  remover: async (id) => {
+    if (!MODO_DEMO) await removerCliente(id);
+    set((state) => ({ clientes: state.clientes.filter((cliente) => cliente.id !== id) }));
+  },
+
+  limpar: () =>
+    set({ clientes: MODO_DEMO ? CLIENTES_MOCK : [], busca: '', filtro: 'todas', erro: null }),
 }));
 
 /** Todas as clientes com prazo, ordenadas por urgencia (mais atrasada primeiro). */

@@ -79,7 +79,9 @@ src/
   components/           componentes de UI reutilizaveis
   constants/theme.ts    cores, espacamentos, tipografia
   constants/techniques.ts  tecnicas e prazos de manutencao
-  lib/supabase.ts       cliente Supabase
+  lib/supabase.ts       cliente Supabase, modo demo e traducao de erros
+  services/clientes.ts  queries de cliente (select/insert/update/delete)
+  store/auth.ts         sessao e login
   store/                estado global (Zustand)
   types/cliente.ts      tipos do dominio
   mocks/clientes.ts     clientes de exemplo (Etapa 3)
@@ -105,7 +107,7 @@ npm run typecheck
 - [x] **Etapa 1** — estrutura do projeto e dependencias
 - [x] **Etapa 2** — modelagem do banco no Supabase (`supabase/schema.sql`)
 - [x] **Etapa 3** — telas (Dashboard, lista com busca e filtros, cadastro) com dados mockados
-- [ ] **Etapa 4** — calculo de datas e integracao Supabase
+- [x] **Etapa 4** — calculo de datas e integracao Supabase (login, CRUD e RLS)
 - [ ] **Etapa 5** — disparo do WhatsApp via `Linking`
 
 ## Telas
@@ -119,6 +121,22 @@ npm run typecheck
   aplicacao e observacoes. A data de retorno aparece em tempo real conforme a
   tecnica e a data mudam.
 
-Na Etapa 3 os dados vem de `src/mocks/clientes.ts` e vivem em memoria
-(`src/store/clientes.ts`, Zustand). A Etapa 4 troca a fonte de dados pelo
-Supabase mantendo as mesmas acoes do store.
+## Dados e login
+
+Com as chaves no `.env`, o app pede login (e-mail e senha criados em
+Authentication > Users) e todo o resto vem do Supabase:
+
+- `src/store/auth.ts` guarda a sessao e escuta `onAuthStateChange`; a sessao
+  fica no AsyncStorage, entao o login sobrevive a fechar o app;
+- `app/_layout.tsx` protege as rotas: sem sessao vai para `/login`, com sessao
+  volta para o inicio, e a lista so e buscada depois que existe sessao;
+- `src/services/clientes.ts` faz as queries. O payload nunca inclui `id`,
+  `user_id`, `data_retorno`, `created_at` nem `updated_at`: quem preenche esses
+  campos e o banco;
+- o status (`no_prazo` / `proximo` / `atrasado`) e recalculado no app a cada
+  render, em `src/utils/dates.ts`, para virar sozinho na virada do dia. A view
+  `clientes_com_status` continua util para consultas SQL e relatorios.
+
+**Modo demonstracao:** sem `.env`, o app abre direto (sem login) com os clientes
+de exemplo de `src/mocks/clientes.ts`, em memoria. Serve para navegar pelas
+telas antes de configurar o Supabase.
