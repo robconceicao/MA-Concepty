@@ -35,23 +35,20 @@ menos) e **Atrasado** (vermelho, data ja passou).
 
 ## Marca
 
-Paleta preta e branca da logo, com rosa seco e dourado como acento
-(`src/constants/theme.ts`).
-
-Os arquivos em `assets/` sao uma **recriacao vetorial** da identidade
-(monograma MA e assinatura MARCO Concept Beauty), desenhada a partir da
-Playfair Display (licenca OFL) por `scripts/build-brand-assets.py`:
+Base preta e branca da logo, com rosa seco e dourado como acento
+(`src/constants/theme.ts`). Os icones sao gerados a partir dos arquivos
+oficiais enviados pela marca:
 
 | Arquivo | Uso |
 | --- | --- |
-| `assets/icon.png` | icone do app (monograma preto no branco) |
+| `assets/icon.png` | icone do app (monograma MA preto no branco) |
 | `assets/android-icon-foreground.png` + `-background` + `-monochrome` | adaptive icon do Android |
-| `assets/splash-icon.png` | splash (assinatura branca sobre `#0E0E0E`) |
+| `assets/splash-icon.png` | splash: assinatura branca sobre `#0E0E0E` |
 | `assets/favicon.png` | web |
-| `assets/brand/*.svg` | monograma e assinatura em vetor, preto e branco |
+| `assets/brand/*.png` | monograma e assinatura, preto e branco, para uso nas telas |
 
-Para trocar pelos arquivos oficiais, basta substituir os PNGs mantendo os
-nomes e as dimensoes (1024x1024 nos icones) — nada muda no `app.json`.
+Os titulos usam Playfair Display (licenca OFL), embarcada em `assets/fonts` e
+carregada por `expo-font` no layout raiz.
 
 ## Banco de dados
 
@@ -85,12 +82,12 @@ src/
   lib/supabase.ts       cliente Supabase
   store/                estado global (Zustand)
   types/cliente.ts      tipos do dominio
+  mocks/clientes.ts     clientes de exemplo (Etapa 3)
   utils/                datas, telefone, WhatsApp
 supabase/
   schema.sql            tabela, view de status, RLS (Etapa 2)
   seed.sql              clientes de exemplo (opcional)
-assets/                 icones, splash e vetores da marca
-scripts/                gerador dos assets da marca
+assets/                 icones, splash, fontes e logos da marca
 ```
 
 ## Rodando
@@ -107,6 +104,21 @@ npm run typecheck
 
 - [x] **Etapa 1** — estrutura do projeto e dependencias
 - [x] **Etapa 2** — modelagem do banco no Supabase (`supabase/schema.sql`)
-- [ ] **Etapa 3** — telas com dados mockados
+- [x] **Etapa 3** — telas (Dashboard, lista com busca e filtros, cadastro) com dados mockados
 - [ ] **Etapa 4** — calculo de datas e integracao Supabase
 - [ ] **Etapa 5** — disparo do WhatsApp via `Linking`
+
+## Telas
+
+- **Hoje** — resumo (total, proximas, atrasadas) e as clientes que precisam de
+  aviso, da mais urgente para a menos. Os cartoes do resumo levam para a lista
+  ja filtrada.
+- **Clientes** — busca por nome (sem diferenciar acento ou maiuscula) e filtros
+  por status, com contador em cada chip.
+- **Cadastro/edicao** — nome, WhatsApp com mascara, tecnica, data da ultima
+  aplicacao e observacoes. A data de retorno aparece em tempo real conforme a
+  tecnica e a data mudam.
+
+Na Etapa 3 os dados vem de `src/mocks/clientes.ts` e vivem em memoria
+(`src/store/clientes.ts`, Zustand). A Etapa 4 troca a fonte de dados pelo
+Supabase mantendo as mesmas acoes do store.

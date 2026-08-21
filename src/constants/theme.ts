@@ -77,8 +77,8 @@ export const shadow = {
 /** Cor de fundo e de texto de cada status de retorno. */
 export const statusColors = {
   no_prazo: { fg: colors.onTime, bg: colors.onTimeSoft, label: 'No prazo' },
-  proximo: { fg: colors.soon, bg: colors.soonSoft, label: 'Proximo' },
-  atrasado: { fg: colors.late, bg: colors.lateSoft, label: 'Atrasado' },
+  proximo: { fg: colors.soon, bg: colors.soonSoft, label: 'Próxima' },
+  atrasado: { fg: colors.late, bg: colors.lateSoft, label: 'Atrasada' },
 } as const;
 
 export const theme = { colors, spacing, radius, typography, shadow, statusColors };
