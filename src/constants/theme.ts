@@ -1,33 +1,39 @@
 /**
- * Design tokens do MA Concepty.
- * Paleta feminina e minimalista: rosa seco, dourado/bege e branco quente.
+ * Design tokens do MARCO Concept Beauty.
+ * Base da marca: preto e branco (logo). Rosa seco e dourado entram como
+ * acentos e nas cores de status, mantendo o visual feminino e minimalista.
  */
 export const colors = {
-  // Base
-  background: '#FDF7F4',
-  surface: '#FFFFFF',
-  surfaceMuted: '#F7EEE9',
-  border: '#EFE0D8',
-
   // Marca
-  primary: '#C98B8B', // rosa seco
-  primarySoft: '#F3DEDE',
-  primaryDark: '#A96F6F',
-  gold: '#C9A66B', // dourado/bege
-  goldSoft: '#F4E9D8',
+  ink: '#0E0E0E',
+  inkSoft: '#2B2B2B',
+  paper: '#FFFFFF',
+
+  // Base
+  background: '#FAF7F5',
+  surface: '#FFFFFF',
+  surfaceMuted: '#F4EDE9',
+  border: '#EAE0DB',
+
+  // Acentos
+  primary: '#0E0E0E', // acoes principais seguem o preto da marca
+  accent: '#C98B8B', // rosa seco
+  accentSoft: '#F5E3E3',
+  gold: '#C9A66B',
+  goldSoft: '#F5EBDA',
 
   // Texto
-  text: '#3A2F2B',
+  text: '#1C1614',
   textMuted: '#8C7A72',
   textInverse: '#FFFFFF',
 
   // Status de retorno
   onTime: '#7BA98B', // verde - no prazo
-  onTimeSoft: '#E3F0E7',
-  soon: '#D9A441', // amarelo - proximo
-  soonSoft: '#FBF0D9',
-  late: '#C96A6A', // vermelho - atrasado
-  lateSoft: '#F8E1E1',
+  onTimeSoft: '#E4F0E8',
+  soon: '#C9A24B', // amarelo/dourado - proximo
+  soonSoft: '#F8EFD8',
+  late: '#C05B5B', // vermelho - atrasado
+  lateSoft: '#F7E0E0',
 
   // Feedback
   danger: '#B4453F',
@@ -68,5 +74,12 @@ export const shadow = {
   },
 } as const;
 
-export const theme = { colors, spacing, radius, typography, shadow };
+/** Cor de fundo e de texto de cada status de retorno. */
+export const statusColors = {
+  no_prazo: { fg: colors.onTime, bg: colors.onTimeSoft, label: 'No prazo' },
+  proximo: { fg: colors.soon, bg: colors.soonSoft, label: 'Proximo' },
+  atrasado: { fg: colors.late, bg: colors.lateSoft, label: 'Atrasado' },
+} as const;
+
+export const theme = { colors, spacing, radius, typography, shadow, statusColors };
 export type Theme = typeof theme;
