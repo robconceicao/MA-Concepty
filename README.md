@@ -93,6 +93,7 @@ src/
 supabase/
   schema.sql            tabela, view de status, RLS (Etapa 2)
   seed.sql              clientes de exemplo (opcional)
+eas.json                perfis de build (development, preview, production)
 assets/                 icones, splash, fontes e logos da marca
 ```
 
@@ -107,6 +108,29 @@ npm start               # QR code para o Expo Go
 npm run android         # ou ios / web
 npm run typecheck
 ```
+
+## Instalando no celular
+
+O passo a passo esta em **[docs/BUILD.md](docs/BUILD.md)**. Resumo:
+
+```bash
+eas login && eas init          # uma vez
+eas env:push preview --path .env
+npm run build:android          # APK para instalar direto
+npm run build:ios              # precisa do Apple Developer Program
+npm run build:dev              # build com dev client, para iterar
+```
+
+Perfis em `eas.json`:
+
+| Perfil | Para que serve |
+| --- | --- |
+| `development` | build com dev client; Android em APK, iOS no simulador |
+| `preview` | o app de verdade, instalado fora da loja (APK / ad hoc) |
+| `production` | `.aab` para a Play Store, com `autoIncrement` da versao |
+
+Nas notificacoes vale usar o `preview` ou o `development`: no Expo Go o suporte
+e limitado.
 
 ## Etapas
 
