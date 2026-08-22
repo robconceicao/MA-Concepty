@@ -98,6 +98,8 @@ assets/                 icones, splash, fontes e logos da marca
 
 ## Rodando
 
+Requer Node 20.19+ (a 22 LTS e a recomendada).
+
 ```bash
 npm install
 cp .env.example .env    # preencha depois da Etapa 2
@@ -196,3 +198,20 @@ proximos — o iOS guarda no maximo 64 notificacoes locais por app.
 > notificacoes no Expo Go e limitado (no Android, principalmente). Para o
 > comportamento definitivo, gere um dev build (`npx expo run:android`) ou um
 > build pelo EAS.
+
+## Versao web
+
+`app.json` usa `web.output: "single"`, ou seja, a web e uma SPA: o app roda
+inteiro no navegador, sem render no servidor. Com o `"static"` anterior o Metro
+executava as telas dentro do Node antes de mandar o HTML, e isso trazia dois
+problemas que a SPA elimina:
+
+- em Node abaixo da 22 nao existe `WebSocket` global, e o `createClient` do
+  Supabase (que monta o cliente de Realtime na hora, mesmo sem a gente usar)
+  estourava com "Node.js detected but native WebSocket not found";
+- o HTML gerado no servidor nao batia com o do navegador (as datas sao
+  calculadas na hora), o que gerava avisos de hidratacao do React.
+
+Por seguranca o `src/lib/supabase.ts` tambem passa um `transport` de Realtime
+quando nao ha `WebSocket` global, entao o cliente monta em qualquer runtime.
+Nada disso afeta Android e iOS.

@@ -20,6 +20,26 @@ if (MODO_DEMO) {
   );
 }
 
+/**
+ * Nao usamos Realtime em lugar nenhum do app, mas o createClient monta o cliente
+ * de Realtime na hora e exige um WebSocket. No navegador e no aparelho ele existe;
+ * ao renderizar a versao web dentro do Node (Node abaixo da 22 nao tem WebSocket
+ * global) o construtor estourava e derrubava a tela inteira. Este stub so entra
+ * nesse caso: se algum dia alguem tentar usar Realtime, o erro diz o porque.
+ */
+class WebSocketIndisponivel {
+  constructor() {
+    throw new Error(
+      'Realtime nao e usado neste app. Rode em Node 22+ para habilitar WebSocket.'
+    );
+  }
+}
+
+const realtimeSemWebSocket =
+  typeof globalThis.WebSocket === 'undefined'
+    ? { transport: WebSocketIndisponivel as unknown as typeof WebSocket }
+    : undefined;
+
 export const supabase = createClient(
   supabaseUrl ?? 'https://demo.supabase.co',
   supabaseAnonKey ?? 'chave-de-demonstracao',
@@ -31,6 +51,7 @@ export const supabase = createClient(
       persistSession: true,
       detectSessionInUrl: false,
     },
+    realtime: realtimeSemWebSocket,
   }
 );
 
