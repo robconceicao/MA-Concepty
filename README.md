@@ -79,6 +79,8 @@ app/                    rotas (expo-router)
   (tabs)/clientes.tsx   Lista de clientes
   cliente/[id].tsx      Cadastro (id = "novo") e edicao
 src/
+  core/retorno.ts       regras de retorno e texto do lembrete (compartilhado
+                        com a Edge Function; sem React Native e sem imports)
   components/           componentes de UI reutilizaveis
   constants/theme.ts    cores, espacamentos, tipografia
   constants/techniques.ts  tecnicas e prazos de manutencao
@@ -93,6 +95,8 @@ src/
 supabase/
   schema.sql            tabela, view de status, RLS (Etapa 2)
   seed.sql              clientes de exemplo (opcional)
+  cron.sql              agendamento do resumo diario
+  functions/resumo-diario/  Edge Function que envia o e-mail
 eas.json                perfis de build (development, preview, production)
 assets/                 icones, splash, fontes e logos da marca
 ```
@@ -201,6 +205,20 @@ Cada disparo grava o horario em `clientes.ultimo_lembrete_em`. A partir dai:
 Se o registro falhar (a internet caiu depois que o WhatsApp abriu), o app marca
 localmente assim mesmo: o lembrete ja saiu, e travar a tela por causa disso
 seria pior.
+
+## Resumo diario por e-mail
+
+Todo dia as 8h chega um e-mail com quem precisa de aviso — atrasadas e proximas —
+e um botao por cliente que abre o WhatsApp com a mensagem pronta. Quem ja foi
+avisada no dia nao entra, e sem pendencias o e-mail nao e enviado.
+
+E o substituto das notificacoes para quem usa a versao web no iPhone. O passo a
+passo esta em **[docs/RESUMO-DIARIO.md](docs/RESUMO-DIARIO.md)**: Edge Function
+no Supabase, envio pela Resend e agendamento com `pg_cron`.
+
+O texto do lembrete nao esta duplicado: a funcao importa o mesmo
+`src/core/retorno.ts` que o aplicativo usa, entao mudar a mensagem num lugar
+muda nos dois.
 
 ## Avisos no dia do retorno
 
