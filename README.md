@@ -223,6 +223,29 @@ proximos — o iOS guarda no maximo 64 notificacoes locais por app.
 > comportamento definitivo, gere um dev build (`npx expo run:android`) ou um
 > build pelo EAS.
 
+## Usando pelo navegador (iPhone e Android)
+
+A versao web e uma SPA e roda no Safari e no Chrome do celular. Da para
+adicionar a tela de inicio: `public/manifest.json` e as meta tags de
+`public/index.html` fazem o app abrir em tela cheia, com o monograma MA como
+icone (`public/apple-touch-icon.png` e os icones 192/512, inclusive o maskable
+do Android).
+
+Para colocar no ar:
+
+```bash
+npx expo export --platform web
+npx eas deploy                # EAS Hosting; Netlify ou Vercel servem igual
+```
+
+Os caminhos do manifesto e dos icones sao absolutos (`/manifest.json`), entao o
+site precisa ficar na raiz do dominio.
+
+**O que muda em relacao ao app instalado:** os avisos no dia do retorno nao
+funcionam (o card nem aparece na web) e o seletor de data vira um campo
+`dd/mm/aaaa`. Login, cadastro, busca, filtros e o botao do WhatsApp funcionam
+igual — o link `wa.me` abre o aplicativo do WhatsApp normalmente.
+
 ## Versao web
 
 `app.json` usa `web.output: "single"`, ou seja, a web e uma SPA: o app roda

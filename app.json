@@ -25,7 +25,9 @@
     "web": {
       "bundler": "metro",
       "output": "single",
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "lang": "pt-BR",
+      "description": "Controle de manutenção de mega hair e lembretes no WhatsApp."
     },
     "plugins": [
       "expo-router",

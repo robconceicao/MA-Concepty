@@ -84,9 +84,16 @@ Sem a conta paga, as opções são:
 
 | Opção | Precisa de | Serve para |
 | --- | --- | --- |
+| **Versão web na tela de início** | nada | uso real no dia a dia, menos as notificações |
 | Simulador do iOS | um Mac | testar tudo, menos notificação push real |
 | Expo Go | nada | ver as telas; notificações locais são limitadas |
 | TestFlight | conta paga | distribuir para outras pessoas testarem |
+
+A primeira linha costuma resolver: publique a versão web
+(`npx expo export --platform web && npx eas deploy`), abra o endereço no Safari
+do iPhone e toque em Compartilhar → **Adicionar à Tela de Início**. O app abre
+em tela cheia, com o ícone da marca, e o botão do WhatsApp funciona. O que fica
+de fora são os avisos no dia do retorno.
 
 Build para o simulador (o perfil `development` já está configurado assim):
 
