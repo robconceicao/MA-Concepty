@@ -34,9 +34,18 @@ O plano gratuito cobre folgadamente um e-mail por dia.
 ```bash
 npm install -g supabase
 supabase login
-supabase link --project-ref SEU-REF        # o ref está na URL do painel
+supabase link          # sem argumentos: a CLI lista seus projetos e você escolhe
 supabase functions deploy resumo-diario --no-verify-jwt
 ```
+
+> **Sobre o "ref" do projeto.** Vários comandos pedem esse código de 20 letras.
+> Ele está no seu `.env`, dentro da URL: em
+> `EXPO_PUBLIC_SUPABASE_URL=https://abcdefghijklmnopqrst.supabase.co`, o ref é
+> `abcdefghijklmnopqrst`. Também aparece na URL do painel, depois de `/project/`.
+> No Windows, para ver o `.env`: `Get-Content .env`.
+>
+> Nos exemplos abaixo, tudo que estiver `<entre-sinais-de-menor-e-maior>` é para
+> ser substituído pelo seu valor — inclusive os sinais.
 
 O `--no-verify-jwt` é necessário porque quem chama a função é o agendador do
 banco, não um usuário logado. No lugar do JWT, a função exige um segredo
@@ -50,8 +59,8 @@ Invente uma senha longa para o `CRON_SECRET` (qualquer texto aleatório serve):
 
 ```bash
 supabase secrets set \
-  RESEND_API_KEY="re_sua_chave_da_resend" \
-  CRON_SECRET="um-texto-aleatorio-bem-longo" \
+  RESEND_API_KEY="<re_sua_chave_da_resend>" \
+  CRON_SECRET="<um-texto-aleatorio-bem-longo>" \
   APP_URL="https://ma-concepty.expo.app"
 ```
 
@@ -69,8 +78,16 @@ supabase secrets set EMAIL_REMETENTE="MARCO <avisos@seudominio.com.br>"
 ## 4. Testar antes de agendar
 
 ```bash
-curl -X POST https://SEU-REF.supabase.co/functions/v1/resumo-diario \
-  -H "x-cron-secret: o-mesmo-texto-do-CRON_SECRET"
+curl -X POST https://<seu-ref>.supabase.co/functions/v1/resumo-diario \
+  -H "x-cron-secret: <o-mesmo-texto-do-CRON_SECRET>"
+```
+
+No PowerShell do Windows, o `curl` é diferente; use:
+
+```powershell
+Invoke-RestMethod -Method Post `
+  -Uri "https://<seu-ref>.supabase.co/functions/v1/resumo-diario" `
+  -Headers @{ "x-cron-secret" = "<o-mesmo-texto-do-CRON_SECRET>" }
 ```
 
 A resposta é um JSON dizendo, para cada conta, quantas pendências havia e se o
@@ -90,8 +107,8 @@ e-mail saiu:
 
 ## 5. Agendar
 
-1. Abra `supabase/cron.sql`, troque as duas linhas marcadas com **TROQUE**
-   (a URL do seu projeto e o mesmo `CRON_SECRET`).
+1. Abra `supabase/cron.sql` e substitua os dois valores `<entre-sinais>`
+   (o ref do seu projeto e o mesmo `CRON_SECRET`).
 2. Cole no **SQL Editor** do Supabase e rode.
 
 Pronto: todo dia às 8h da manhã (horário de Brasília) o resumo chega.

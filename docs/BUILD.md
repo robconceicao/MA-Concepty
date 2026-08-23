@@ -34,7 +34,7 @@ eas env:push production --path .env
 Ou uma variável por vez:
 
 ```bash
-eas env:set --name EXPO_PUBLIC_SUPABASE_URL --value "https://xxx.supabase.co" \
+eas env:set --name EXPO_PUBLIC_SUPABASE_URL --value "https://<seu-ref>.supabase.co" \
   --environment preview --environment production --visibility plaintext
 ```
 

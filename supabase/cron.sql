@@ -2,7 +2,8 @@
 -- MARCO Concept Beauty - agendamento do resumo diário por e-mail
 --
 -- Rode DEPOIS de publicar a função (veja docs/RESUMO-DIARIO.md).
--- Antes de executar, troque as duas linhas marcadas com TROQUE.
+-- Antes de executar, substitua os dois valores <entre-sinais> abaixo pelos seus
+-- (os sinais < > tambem saem). O ref do projeto esta na URL do painel e no .env.
 -- =============================================================================
 
 create extension if not exists pg_cron;
@@ -24,10 +25,10 @@ select cron.schedule(
   '0 11 * * *',
   $$
   select net.http_post(
-    url := 'https://TROQUE-PELO-REF-DO-PROJETO.supabase.co/functions/v1/resumo-diario',
+    url := 'https://<seu-ref>.supabase.co/functions/v1/resumo-diario',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'x-cron-secret', 'TROQUE-PELO-MESMO-CRON_SECRET-DA-FUNCAO'
+      'x-cron-secret', '<o-mesmo-texto-do-CRON_SECRET>'
     ),
     body := '{}'::jsonb
   );
