@@ -43,6 +43,8 @@ export default function DashboardScreen() {
   const avisosAtivados = useNotificacoesStore((state) => state.ativado);
   const avisosAgendados = useNotificacoesStore((state) => state.agendados);
   const avisosOcupado = useNotificacoesStore((state) => state.ocupado);
+  const avisosPrecisaTelaDeInicio = useNotificacoesStore((state) => state.precisaTelaDeInicio);
+  const avisosErro = useNotificacoesStore((state) => state.erro);
   const alternarAvisos = useNotificacoesStore((state) => state.alternar);
 
   function abrirLista(filtro: FiltroStatus) {
@@ -112,6 +114,8 @@ export default function DashboardScreen() {
             ativado={avisosAtivados}
             agendados={avisosAgendados}
             ocupado={avisosOcupado}
+            precisaTelaDeInicio={avisosPrecisaTelaDeInicio}
+            erro={avisosErro}
             onAlternar={() => alternarAvisos(clientes)}
           />
         )}

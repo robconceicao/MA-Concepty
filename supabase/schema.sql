@@ -190,3 +190,57 @@ grant usage on schema public to authenticated;
 grant select, insert, update, delete on public.clientes to authenticated;
 grant select on public.clientes_com_status to authenticated;
 grant execute on function public.dias_manutencao(public.tecnica_mega_hair) to authenticated;
+
+-- -----------------------------------------------------------------------------
+-- 8. Assinaturas de push (aviso na tela do celular pela versao web)
+-- -----------------------------------------------------------------------------
+-- Cada aparelho que autoriza o aviso guarda aqui o proprio endereco de entrega.
+-- Um mesmo login pode ter varios (celular, tablet, computador).
+create table if not exists public.push_assinaturas (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+
+  -- Endereco que o navegador da para entregar o aviso. E unico por aparelho.
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+
+  aparelho text,
+  criado_em timestamptz not null default now(),
+  ultimo_envio_em timestamptz
+);
+
+comment on table public.push_assinaturas is
+  'Aparelhos autorizados a receber aviso de retorno pela versao web (Web Push).';
+
+create index if not exists push_assinaturas_user_idx
+  on public.push_assinaturas (user_id);
+
+alter table public.push_assinaturas enable row level security;
+
+drop policy if exists "push_select_own" on public.push_assinaturas;
+create policy "push_select_own"
+  on public.push_assinaturas for select
+  to authenticated
+  using (auth.uid() = user_id);
+
+drop policy if exists "push_insert_own" on public.push_assinaturas;
+create policy "push_insert_own"
+  on public.push_assinaturas for insert
+  to authenticated
+  with check (auth.uid() = user_id);
+
+drop policy if exists "push_update_own" on public.push_assinaturas;
+create policy "push_update_own"
+  on public.push_assinaturas for update
+  to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+drop policy if exists "push_delete_own" on public.push_assinaturas;
+create policy "push_delete_own"
+  on public.push_assinaturas for delete
+  to authenticated
+  using (auth.uid() = user_id);
+
+grant select, insert, update, delete on public.push_assinaturas to authenticated;

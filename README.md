@@ -86,7 +86,8 @@ src/
   constants/techniques.ts  tecnicas e prazos de manutencao
   lib/supabase.ts       cliente Supabase, modo demo e traducao de erros
   services/clientes.ts  queries de cliente (select/insert/update/delete)
-  services/notificacoes.ts  agendamento dos avisos no aparelho
+  services/notificacoes.ts  agendamento dos avisos no aparelho (app instalado)
+  services/pushWeb.ts   assinatura de Web Push (versao web)
   store/auth.ts         sessao e login
   store/                estado global (Zustand)
   types/cliente.ts      tipos do dominio
@@ -220,6 +221,16 @@ O texto do lembrete nao esta duplicado: a funcao importa o mesmo
 `src/core/retorno.ts` que o aplicativo usa, entao mudar a mensagem num lugar
 muda nos dois.
 
+## Aviso na tela do iPhone (Web Push)
+
+Site adicionado a tela de inicio recebe notificacao push a partir do iOS 16.4,
+sem App Store e sem a assinatura da Apple. O aviso sai junto com o resumo das
+8h, pela mesma Edge Function, e tocar nele abre o app.
+
+Passo a passo em **[docs/PUSH-IPHONE.md](docs/PUSH-IPHONE.md)**: chaves VAPID,
+tabela `push_assinaturas`, segredos e como ligar no aparelho. O service worker
+que recebe o aviso e o `public/sw.js`.
+
 ## Avisos no dia do retorno
 
 O card no inicio liga notificacoes **locais**, agendadas no proprio aparelho
@@ -259,9 +270,10 @@ npx eas deploy                # EAS Hosting; Netlify ou Vercel servem igual
 Os caminhos do manifesto e dos icones sao absolutos (`/manifest.json`), entao o
 site precisa ficar na raiz do dominio.
 
-**O que muda em relacao ao app instalado:** os avisos no dia do retorno nao
-funcionam (o card nem aparece na web) e o seletor de data vira um campo
-`dd/mm/aaaa`. Login, cadastro, busca, filtros e o botao do WhatsApp funcionam
+**O que muda em relacao ao app instalado:** o aviso no dia do retorno vira um
+push diario disparado pelo servidor, em vez de uma notificacao por cliente
+agendada no aparelho (veja a secao de Web Push), e o seletor de data vira um
+campo `dd/mm/aaaa`. Login, cadastro, busca, filtros e o botao do WhatsApp funcionam
 igual — o link `wa.me` abre o aplicativo do WhatsApp normalmente.
 
 ## Versao web
