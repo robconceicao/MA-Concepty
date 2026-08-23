@@ -31,12 +31,18 @@ O plano gratuito cobre folgadamente um e-mail por dia.
 
 ## 2. Instalar a CLI do Supabase e publicar a função
 
+Rode tudo **de dentro da pasta do projeto** (`MA-Concepty`):
+
 ```bash
 npm install -g supabase
 supabase login
-supabase link          # sem argumentos: a CLI lista seus projetos e você escolhe
-supabase functions deploy resumo-diario --no-verify-jwt
+supabase link                              # lista seus projetos e você escolhe
+supabase functions deploy resumo-diario
 ```
+
+O `supabase/config.toml` do repositório é o que marca a raiz do projeto e já
+desliga a verificação de JWT para esta função (quem chama é o agendador do
+banco, não um usuário logado), então não precisa do `--no-verify-jwt`.
 
 > **Sobre o "ref" do projeto.** Vários comandos pedem esse código de 20 letras.
 > Ele está no seu `.env`, dentro da URL: em
@@ -102,6 +108,14 @@ e-mail saiu:
 - `401` → o `x-cron-secret` não bate com o `CRON_SECRET` da função.
 - Erro citando a Resend → chave errada, ou você tentou enviar para um e-mail
   diferente do dono da conta sem ter verificado um domínio.
+
+### "entrypoint path does not exist"
+
+Se o `deploy` reclamar que não encontrou o `index.ts`, repare no caminho que ele
+mostra. Se não for a pasta do projeto (por exemplo `C:\Users\seu-usuario\
+supabase\...`), a CLI subiu na árvore e achou o `supabase/config.toml` de outro
+projeto seu. Rode o comando de dentro de `MA-Concepty` e confirme que o
+`supabase/config.toml` deste repositório existe.
 
 ---
 

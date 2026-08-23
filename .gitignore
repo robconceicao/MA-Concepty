@@ -43,3 +43,7 @@ yarn-error.*
 # Ambiente local
 .env
 .env.local
+
+# arquivos locais da CLI do Supabase
+supabase/.temp/
+supabase/.branches/

@@ -1,0 +1,11 @@
+# Configuração da CLI do Supabase para este projeto.
+#
+# A existência deste arquivo é o que faz a CLI reconhecer a raiz do projeto.
+# Sem ele, ela sobe na árvore de pastas e pode acabar usando o config de outro
+# projeto (foi o que aconteceu: ela procurou a função em C:\Users\robtc\supabase).
+project_id = "ma-concepty"
+
+[functions.resumo-diario]
+# Quem chama esta função é o agendador do banco, não um usuário logado.
+# No lugar do JWT, ela exige o cabeçalho x-cron-secret.
+verify_jwt = false
