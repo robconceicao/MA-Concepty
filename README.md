@@ -312,3 +312,45 @@ problemas que a SPA elimina:
 Por seguranca o `src/lib/supabase.ts` tambem passa um `transport` de Realtime
 quando nao ha `WebSocket` global, entao o cliente monta em qualquer runtime.
 Nada disso afeta Android e iOS.
+
+## Atualizando a versao web
+
+Nao existe CI/CD: `git push` nao publica nada. O site so muda quando alguem
+roda, na raiz do projeto:
+
+```bash
+npm run deploy:web
+# equivale a: expo export --platform web && eas deploy --prod
+```
+
+Depois do deploy, quem ja estava com o app aberto nao troca de versao sozinho —
+principalmente no iPhone, onde o app da tela de inicio fica suspenso na memoria
+com a pagina antiga. Para isso existe a faixa de aviso
+(`src/components/AvisoDeAtualizacao.tsx`).
+
+Como ela sabe que saiu build novo: o Expo poe o hash do conteudo no nome do
+bundle (`entry-<hash>.js`) e o `index.html` aponta para ele. O app le esse hash
+das proprias tags `<script>` e compara com o hash do `index.html` publicado,
+buscado com `cache: 'no-store'`. Se mudou, saiu versao nova. Nao existe arquivo
+de versao para lembrar de atualizar, e nao ha passo extra no deploy.
+
+Quando a comparacao acontece (`src/hooks/useNovaVersao.ts`):
+
+- ao voltar para o app (`visibilitychange`) — e o caso do iPhone reabrindo da
+  memoria;
+- a cada 30 minutos, com o app aberto e visivel;
+- nunca duas vezes no mesmo minuto, e nunca com a aba escondida.
+
+A faixa nao some sozinha: ou a pessoa toca em **Atualizar** (que chama
+`location.reload()`) ou fecha no **x**. Em desenvolvimento o bundle e servido
+sem hash no nome, entao `versaoCarregada()` devolve `null` e a verificacao fica
+desligada — no aplicativo nativo tambem.
+
+O `public/sw.js` de proposito nao faz cache de nada, entao nao ha risco de
+sobrar versao velha presa no aparelho depois do reload.
+
+### O que nao se atualiza sozinho
+
+Os dados (clientes, atendimentos) sao buscados quando a tela abre e no
+"puxar para atualizar", mas o app nao usa Realtime. Lancar um atendimento no
+computador nao aparece no celular ate recarregar aquela tela.

@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AvisoDeAtualizacao } from '@/components/AvisoDeAtualizacao';
 import { fontAssets, fonts } from '@/constants/fonts';
 import { colors } from '@/constants/theme';
 import { NOTIFICACOES_SUPORTADAS } from '@/services/notificacoes';
@@ -135,6 +136,7 @@ export default function RootLayout() {
         <Stack.Screen name="atendimento/novo" options={{ title: 'Lançar atendimento' }} />
         <Stack.Screen name="adiantamento/novo" options={{ title: 'Registrar adiantamento' }} />
       </Stack>
+      <AvisoDeAtualizacao />
     </SafeAreaProvider>
   );
 }
