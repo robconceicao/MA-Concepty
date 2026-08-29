@@ -42,6 +42,15 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="ganhos"
+        options={{
+          title: 'Ganhos',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="wallet-outline" color={color} size={size} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

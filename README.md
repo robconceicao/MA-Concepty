@@ -77,10 +77,14 @@ app/                    rotas (expo-router)
   (tabs)/_layout.tsx    abas Dashboard / Clientes
   (tabs)/index.tsx      Dashboard
   (tabs)/clientes.tsx   Lista de clientes
+  (tabs)/ganhos.tsx     Fechamento do mes e lancamentos
   cliente/[id].tsx      Cadastro (id = "novo") e edicao
+  atendimento/novo.tsx  Lancar procedimento realizado
+  adiantamento/novo.tsx Registrar adiantamento
 src/
   core/retorno.ts       regras de retorno e texto do lembrete (compartilhado
                         com a Edge Function; sem React Native e sem imports)
+  core/financeiro.ts    fechamento do mes, dias uteis e feriados bancarios
   components/           componentes de UI reutilizaveis
   constants/theme.ts    cores, espacamentos, tipografia
   constants/techniques.ts  tecnicas e prazos de manutencao
@@ -206,6 +210,18 @@ Cada disparo grava o horario em `clientes.ultimo_lembrete_em`. A partir dai:
 Se o registro falhar (a internet caiu depois que o WhatsApp abriu), o app marca
 localmente assim mesmo: o lembrete ja saiu, e travar a tela por causa disso
 seria pior.
+
+## Ganhos
+
+A aba **Ganhos** fecha o mes: quanto as clientes pagaram, quanto e do
+profissional, quanto ja foi adiantado e quanto sobra para receber — no 5o dia
+util do mes seguinte, pulando fim de semana e feriado bancario.
+
+O catalogo comeca com Combo Mecha (R$ 650, 15%), Mega Hair Fita Adesiva
+(R$ 100, 15%) e Progressiva (R$ 100, 15%). Cada atendimento guarda uma copia do
+valor e do percentual do dia, entao mudar o preco nao reescreve o historico.
+
+Detalhes, incluindo o que ainda nao faz, em **[docs/GANHOS.md](docs/GANHOS.md)**.
 
 ## Resumo diario por e-mail
 

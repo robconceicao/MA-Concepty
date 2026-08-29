@@ -12,6 +12,7 @@ import { NOTIFICACOES_SUPORTADAS } from '@/services/notificacoes';
 import { limparBadge } from '@/services/pushWeb';
 import { useAuthStore } from '@/store/auth';
 import { useClientesStore } from '@/store/clientes';
+import { useFinanceiroStore } from '@/store/financeiro';
 import { useNotificacoesStore } from '@/store/notificacoes';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -42,6 +43,8 @@ export default function RootLayout() {
   const carregarClientes = useClientesStore((state) => state.carregar);
   const limparClientes = useClientesStore((state) => state.limpar);
   const clientes = useClientesStore((state) => state.clientes);
+  const carregarGanhos = useFinanceiroStore((state) => state.carregar);
+  const limparGanhos = useFinanceiroStore((state) => state.limpar);
   const iniciarAvisos = useNotificacoesStore((state) => state.inicializar);
   const sincronizarAvisos = useNotificacoesStore((state) => state.sincronizar);
   const router = useRouter();
@@ -50,9 +53,14 @@ export default function RootLayout() {
 
   // A lista só é buscada depois que existe sessão, se não o RLS devolve vazio.
   useEffect(() => {
-    if (sessao) carregarClientes();
-    else limparClientes();
-  }, [sessao, carregarClientes, limparClientes]);
+    if (sessao) {
+      carregarClientes();
+      carregarGanhos();
+    } else {
+      limparClientes();
+      limparGanhos();
+    }
+  }, [sessao, carregarClientes, limparClientes, carregarGanhos, limparGanhos]);
 
   useEffect(() => {
     iniciarAvisos();
@@ -124,6 +132,8 @@ export default function RootLayout() {
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="cliente/[id]" options={{ title: 'Cliente' }} />
+        <Stack.Screen name="atendimento/novo" options={{ title: 'Lançar atendimento' }} />
+        <Stack.Screen name="adiantamento/novo" options={{ title: 'Registrar adiantamento' }} />
       </Stack>
     </SafeAreaProvider>
   );

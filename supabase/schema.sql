@@ -244,3 +244,162 @@ create policy "push_delete_own"
   using (auth.uid() = user_id);
 
 grant select, insert, update, delete on public.push_assinaturas to authenticated;
+
+-- =============================================================================
+-- 9. Ganhos do profissional
+-- =============================================================================
+-- O catalogo guarda o preco e o percentual de hoje; cada atendimento guarda uma
+-- copia dos dois. E de proposito: mudar o preco no catalogo nao pode reescrever
+-- o que ja foi pago no mes passado.
+
+create table if not exists public.procedimentos (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+
+  nome text not null,
+  /** Quanto a cliente paga pelo procedimento. */
+  valor_cliente numeric(10, 2) not null,
+  /** Quanto disso fica com o profissional, em porcentagem. */
+  percentual_profissional numeric(5, 2) not null,
+
+  ativo boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  constraint procedimentos_nome_check check (char_length(btrim(nome)) between 2 and 120),
+  constraint procedimentos_valor_check check (valor_cliente >= 0),
+  constraint procedimentos_percentual_check check (percentual_profissional between 0 and 100)
+);
+
+comment on table public.procedimentos is
+  'Catalogo de procedimentos, com o valor cobrado da cliente e a comissao do profissional.';
+
+-- Nome unico por conta, sem diferenciar maiusculas.
+create unique index if not exists procedimentos_user_nome_idx
+  on public.procedimentos (user_id, lower(btrim(nome)));
+
+drop trigger if exists procedimentos_set_updated_at on public.procedimentos;
+create trigger procedimentos_set_updated_at
+  before update on public.procedimentos
+  for each row
+  execute function public.set_updated_at();
+
+create table if not exists public.atendimentos (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+
+  procedimento_id uuid not null references public.procedimentos (id) on delete restrict,
+  -- Opcional: o atendimento pode ser de uma cliente avulsa, sem cadastro.
+  cliente_id uuid references public.clientes (id) on delete set null,
+  nome_cliente text,
+
+  data date not null,
+
+  -- Copia do catalogo no dia do atendimento.
+  valor_cliente numeric(10, 2) not null,
+  percentual_profissional numeric(5, 2) not null,
+  -- Quanto o profissional ganhou. Quem calcula e o banco.
+  valor_profissional numeric(10, 2) generated always as (
+    round(valor_cliente * percentual_profissional / 100, 2)
+  ) stored,
+
+  observacoes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  constraint atendimentos_valor_check check (valor_cliente >= 0),
+  constraint atendimentos_percentual_check check (percentual_profissional between 0 and 100),
+  constraint atendimentos_observacoes_check check (observacoes is null or char_length(observacoes) <= 1000)
+);
+
+comment on table public.atendimentos is
+  'Procedimentos realizados. valor_cliente e percentual sao a copia do catalogo na data.';
+
+create index if not exists atendimentos_user_data_idx
+  on public.atendimentos (user_id, data desc);
+
+drop trigger if exists atendimentos_set_updated_at on public.atendimentos;
+create trigger atendimentos_set_updated_at
+  before update on public.atendimentos
+  for each row
+  execute function public.set_updated_at();
+
+-- Adiantamento: dinheiro ja recebido, que entra como debito no fechamento do mes.
+create table if not exists public.adiantamentos (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+
+  data date not null,
+  valor numeric(10, 2) not null,
+  descricao text,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  constraint adiantamentos_valor_check check (valor > 0),
+  constraint adiantamentos_descricao_check check (descricao is null or char_length(descricao) <= 200)
+);
+
+comment on table public.adiantamentos is
+  'Valores adiantados ao profissional, descontados do fechamento do mes.';
+
+create index if not exists adiantamentos_user_data_idx
+  on public.adiantamentos (user_id, data desc);
+
+drop trigger if exists adiantamentos_set_updated_at on public.adiantamentos;
+create trigger adiantamentos_set_updated_at
+  before update on public.adiantamentos
+  for each row
+  execute function public.set_updated_at();
+
+-- -----------------------------------------------------------------------------
+-- 9.1 RLS dos ganhos
+-- -----------------------------------------------------------------------------
+alter table public.procedimentos enable row level security;
+alter table public.atendimentos enable row level security;
+alter table public.adiantamentos enable row level security;
+
+do $$
+declare
+  tabela text;
+begin
+  foreach tabela in array array['procedimentos', 'atendimentos', 'adiantamentos'] loop
+    execute format('drop policy if exists "%1$s_select_own" on public.%1$I', tabela);
+    execute format(
+      'create policy "%1$s_select_own" on public.%1$I for select to authenticated using (auth.uid() = user_id)',
+      tabela
+    );
+    execute format('drop policy if exists "%1$s_insert_own" on public.%1$I', tabela);
+    execute format(
+      'create policy "%1$s_insert_own" on public.%1$I for insert to authenticated with check (auth.uid() = user_id)',
+      tabela
+    );
+    execute format('drop policy if exists "%1$s_update_own" on public.%1$I', tabela);
+    execute format(
+      'create policy "%1$s_update_own" on public.%1$I for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id)',
+      tabela
+    );
+    execute format('drop policy if exists "%1$s_delete_own" on public.%1$I', tabela);
+    execute format(
+      'create policy "%1$s_delete_own" on public.%1$I for delete to authenticated using (auth.uid() = user_id)',
+      tabela
+    );
+    execute format('grant select, insert, update, delete on public.%1$I to authenticated', tabela);
+  end loop;
+end
+$$;
+
+-- -----------------------------------------------------------------------------
+-- 9.2 Catalogo inicial
+-- -----------------------------------------------------------------------------
+-- Cria os tres procedimentos para cada conta que ainda nao os tem. Rodar de novo
+-- nao duplica nem sobrescreve valores que voce tenha ajustado no painel.
+insert into public.procedimentos (user_id, nome, valor_cliente, percentual_profissional)
+select u.id, catalogo.nome, catalogo.valor, catalogo.percentual
+from auth.users u
+cross join (values
+  ('Combo Mecha', 650.00, 15.00),
+  ('Mega Hair Fita Adesiva', 100.00, 15.00),
+  ('Progressiva', 100.00, 15.00)
+) as catalogo(nome, valor, percentual)
+on conflict do nothing;
