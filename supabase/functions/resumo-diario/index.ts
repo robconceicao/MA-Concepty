@@ -72,8 +72,8 @@ async function enviarPush(
   const assinaturas = (data ?? []) as Assinatura[];
   if (assinaturas.length === 0) return { enviados: 0, removidos: 0 };
 
-  const { titulo, corpo } = montarPush(pendentes);
-  const conteudo = JSON.stringify({ titulo, corpo, url: appUrl, tag: 'retornos' });
+  const { titulo, corpo, total } = montarPush(pendentes);
+  const conteudo = JSON.stringify({ titulo, corpo, total, url: appUrl, tag: 'retornos' });
 
   let enviados = 0;
   const expiradas: string[] = [];

@@ -29,8 +29,26 @@ self.addEventListener('push', (evento) => {
     data: { url: dados.url || '/' },
   };
 
-  evento.waitUntil(self.registration.showNotification(titulo, opcoes));
+  evento.waitUntil(
+    Promise.all([
+      self.registration.showNotification(titulo, opcoes),
+      // Bolinha vermelha no ícone, com quantas clientes esperam aviso. Diferente
+      // da notificação, ela não sai da tela sozinha: só quando o app é aberto.
+      definirBadge(dados.total),
+    ])
+  );
 });
+
+/** O badge é opcional: nem todo navegador tem, e falhar aqui não pode derrubar o aviso. */
+async function definirBadge(total) {
+  try {
+    if (typeof total === 'number' && total > 0 && self.navigator.setAppBadge) {
+      await self.navigator.setAppBadge(total);
+    }
+  } catch {
+    /* sem badge neste aparelho */
+  }
+}
 
 self.addEventListener('notificationclick', (evento) => {
   evento.notification.close();

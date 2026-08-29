@@ -124,3 +124,17 @@ export async function cancelarPush(): Promise<void> {
   await supabase.from('push_assinaturas').delete().eq('endpoint', assinatura.endpoint);
   await assinatura.unsubscribe();
 }
+
+/**
+ * Badge do ícone: a bolinha vermelha com o número de clientes esperando aviso.
+ * Quem coloca é o service worker, ao receber o push; quem tira é o app, ao abrir.
+ * Nem todo navegador tem a API, e não ter badge nunca pode quebrar nada.
+ */
+export async function limparBadge(): Promise<void> {
+  if (Platform.OS !== 'web' || typeof navigator === 'undefined') return;
+  try {
+    await (navigator as Navigator & { clearAppBadge?: () => Promise<void> }).clearAppBadge?.();
+  } catch {
+    /* aparelho sem suporte a badge */
+  }
+}

@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { fontAssets, fonts } from '@/constants/fonts';
 import { colors } from '@/constants/theme';
 import { NOTIFICACOES_SUPORTADAS } from '@/services/notificacoes';
+import { limparBadge } from '@/services/pushWeb';
 import { useAuthStore } from '@/store/auth';
 import { useClientesStore } from '@/store/clientes';
 import { useNotificacoesStore } from '@/store/notificacoes';
@@ -56,6 +57,19 @@ export default function RootLayout() {
   useEffect(() => {
     iniciarAvisos();
   }, [iniciarAvisos]);
+
+  // Abriu o app: some a bolinha do ícone. Vale também ao voltar para a aba,
+  // porque no celular o app costuma ficar aberto em segundo plano.
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    limparBadge();
+
+    const aoVoltar = () => {
+      if (document.visibilityState === 'visible') limparBadge();
+    };
+    document.addEventListener('visibilitychange', aoVoltar);
+    return () => document.removeEventListener('visibilitychange', aoVoltar);
+  }, []);
 
   // Mudou a lista, mudou a data de algum retorno: os avisos sao reagendados.
   useEffect(() => {

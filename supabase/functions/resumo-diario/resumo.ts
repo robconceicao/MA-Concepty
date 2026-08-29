@@ -144,8 +144,12 @@ export function montarHtml(pendentes: Pendente[], appUrl: string): string {
 </body></html>`;
 }
 
-/** Texto curto do aviso que aparece na tela do celular. */
-export function montarPush(pendentes: Pendente[]): { titulo: string; corpo: string } {
+/** Texto curto do aviso que aparece na tela do celular, e o número do badge. */
+export function montarPush(pendentes: Pendente[]): {
+  titulo: string;
+  corpo: string;
+  total: number;
+} {
   const atrasadas = pendentes.filter((c) => c.status === 'atrasado').length;
   const proximas = pendentes.length - atrasadas;
 
@@ -160,5 +164,6 @@ export function montarPush(pendentes: Pendente[]): { titulo: string; corpo: stri
         ? `${primeira.nome} precisa de aviso`
         : `${pendentes.length} clientes para avisar`,
     corpo: `${partes.join(' · ')} · toque para abrir e enviar os lembretes`,
+    total: pendentes.length,
   };
 }

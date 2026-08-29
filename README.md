@@ -227,9 +227,13 @@ Site adicionado a tela de inicio recebe notificacao push a partir do iOS 16.4,
 sem App Store e sem a assinatura da Apple. O aviso sai junto com o resumo das
 8h, pela mesma Edge Function, e tocar nele abre o app.
 
+Junto com o aviso, o icone ganha um badge com quantas clientes esperam — ele so
+sai quando o app e aberto, mesmo que a notificacao seja dispensada.
+
 Passo a passo em **[docs/PUSH-IPHONE.md](docs/PUSH-IPHONE.md)**: chaves VAPID,
-tabela `push_assinaturas`, segredos e como ligar no aparelho. O service worker
-que recebe o aviso e o `public/sw.js`.
+tabela `push_assinaturas`, segredos, como ligar no aparelho e como fazer o
+banner ficar parado ate voce agir. O service worker que recebe o aviso e o
+`public/sw.js`.
 
 ## Avisos no dia do retorno
 

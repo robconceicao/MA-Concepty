@@ -116,6 +116,29 @@ não deixa lixo acumulado.
 
 ---
 
+## Como o aviso se comporta no iPhone
+
+É uma notificação do sistema, igual às do WhatsApp — não uma caixa dentro do app.
+
+**Ela não expira.** O banner que desliza no topo some depois de alguns segundos,
+mas a notificação continua na tela bloqueada e na Central de Notificações até
+você tocar nela ou dispensar.
+
+**Para o banner também ficar parado até você agir:**
+Ajustes → Notificações → MARCO → **Estilo de Banner** → **Persistente**.
+Na mesma tela, deixe ligados *Tela Bloqueada*, *Central de Notificações* e
+*Banners*. Isso é ajuste do aparelho: o padrão web tem uma opção equivalente
+(`requireInteraction`), mas o Safari do iPhone a ignora.
+
+**Badge no ícone.** Junto com o aviso, o ícone do app ganha a bolinha vermelha
+com o número de clientes esperando. Ela é a lembrança mais teimosa das três:
+fica na tela inicial até o app ser aberto — mesmo que você dispense a
+notificação sem querer. Quem coloca é o service worker ao receber o push; quem
+tira é o app, ao abrir ou ao voltar para a frente.
+
+Aparelho sem suporte a badge simplesmente não mostra a bolinha; o resto funciona
+igual.
+
 ## O que dá para esperar
 
 O push do iOS via web é confiável, mas não é idêntico ao nativo: o sistema pode
