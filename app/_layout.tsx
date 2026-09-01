@@ -14,26 +14,53 @@ import { limparBadge } from '@/services/pushWeb';
 import { useAuthStore } from '@/store/auth';
 import { useClientesStore } from '@/store/clientes';
 import { useFinanceiroStore } from '@/store/financeiro';
+import { useLicenseStore } from '@/store/license';
 import { useNotificacoesStore } from '@/store/notificacoes';
 
-SplashScreen.preventAutoHideAsync().catch(() => {
-  /* a splash já pode ter sido escondida */
-});
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
-/** Manda para o login quem não tem sessão, e para o app quem já tem. */
 function useRotaProtegida() {
   const sessao = useAuthStore((state) => state.sessao);
   const iniciando = useAuthStore((state) => state.iniciando);
+  const license = useLicenseStore((state) => state.license);
+  const iniciandoLicenca = useLicenseStore((state) => state.iniciando);
+  const configurado = useLicenseStore((state) => state.configurado);
   const segmentos = useSegments();
   const router = useRouter();
 
   useEffect(() => {
     if (iniciando) return;
-    const naTelaDeLogin = segmentos[0] === 'login';
+    const rotaAtual = segmentos[0];
+    const naTelaDeLogin = rotaAtual === 'login';
+    const naTelaDeLicenca = rotaAtual === 'licenca';
 
-    if (!sessao && !naTelaDeLogin) router.replace('/login');
-    else if (sessao && naTelaDeLogin) router.replace('/');
-  }, [sessao, iniciando, segmentos, router]);
+    if (!sessao) {
+      if (!naTelaDeLogin) router.replace('/login');
+      return;
+    }
+
+    if (configurado) {
+      if (iniciandoLicenca) return;
+      if (!license && !naTelaDeLicenca) {
+        router.replace('/licenca');
+        return;
+      }
+      if (license && (naTelaDeLogin || naTelaDeLicenca)) {
+        router.replace('/');
+        return;
+      }
+    } else if (naTelaDeLogin || naTelaDeLicenca) {
+      router.replace('/');
+    }
+  }, [
+    sessao,
+    iniciando,
+    license,
+    iniciandoLicenca,
+    configurado,
+    segmentos,
+    router,
+  ]);
 }
 
 export default function RootLayout() {
@@ -41,6 +68,10 @@ export default function RootLayout() {
   const inicializar = useAuthStore((state) => state.inicializar);
   const sessao = useAuthStore((state) => state.sessao);
   const iniciando = useAuthStore((state) => state.iniciando);
+  const inicializarLicenca = useLicenseStore((state) => state.inicializar);
+  const limparLicenca = useLicenseStore((state) => state.limpar);
+  const iniciandoLicenca = useLicenseStore((state) => state.iniciando);
+  const configuradoLicenca = useLicenseStore((state) => state.configurado);
   const carregarClientes = useClientesStore((state) => state.carregar);
   const limparClientes = useClientesStore((state) => state.limpar);
   const clientes = useClientesStore((state) => state.clientes);
@@ -52,7 +83,11 @@ export default function RootLayout() {
 
   useEffect(() => inicializar(), [inicializar]);
 
-  // A lista só é buscada depois que existe sessão, se não o RLS devolve vazio.
+  useEffect(() => {
+    if (sessao) void inicializarLicenca();
+    else limparLicenca();
+  }, [sessao, inicializarLicenca, limparLicenca]);
+
   useEffect(() => {
     if (sessao) {
       carregarClientes();
@@ -67,8 +102,6 @@ export default function RootLayout() {
     iniciarAvisos();
   }, [iniciarAvisos]);
 
-  // Abriu o app: some a bolinha do ícone. Vale também ao voltar para a aba,
-  // porque no celular o app costuma ficar aberto em segundo plano.
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     limparBadge();
@@ -80,12 +113,10 @@ export default function RootLayout() {
     return () => document.removeEventListener('visibilitychange', aoVoltar);
   }, []);
 
-  // Mudou a lista, mudou a data de algum retorno: os avisos sao reagendados.
   useEffect(() => {
     sincronizarAvisos(clientes);
   }, [clientes, sincronizarAvisos]);
 
-  // Tocar na notificacao abre a ficha da cliente.
   useEffect(() => {
     if (!NOTIFICACOES_SUPORTADAS) return;
     let ativo = true;
@@ -107,10 +138,9 @@ export default function RootLayout() {
     }
   }, [fontesCarregadas, erroFontes]);
 
-  // Na web a fonte entra depois; segurar a tela aqui quebraria a hidratação.
   if (!fontesCarregadas && !erroFontes && Platform.OS !== 'web') return null;
 
-  if (iniciando) {
+  if (iniciando || (sessao && configuradoLicenca && iniciandoLicenca)) {
     return (
       <View style={styles.carregando}>
         <ActivityIndicator color={colors.primary} />
@@ -131,6 +161,7 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="licenca" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="cliente/[id]" options={{ title: 'Cliente' }} />
         <Stack.Screen name="atendimento/novo" options={{ title: 'Lançar atendimento' }} />
