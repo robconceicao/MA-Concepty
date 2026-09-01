@@ -2,23 +2,24 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 import { colors } from '@/constants/theme';
+import { useLicenseStore } from '@/store/license';
 
 export default function TabsLayout() {
+  const license = useLicenseStore((state) => state.license);
+  const configurado = useLicenseStore((state) => state.configurado);
+  const temFeature = useLicenseStore((state) => state.temFeature);
+  const ganhosLiberados = !configurado || !license || temFeature('financial_gains');
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textMuted,
-        // lineHeight explicito: sem ele a caixa do rotulo fica menor que a fonte
-        // e a perna do "j" de "Hoje" some na web.
         tabBarLabelStyle: { fontSize: 11.5, fontWeight: '600', lineHeight: 15 },
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          // Na web nao existe area segura embaixo, e a barra encosta no fim da
-          // janela cortando a perna do "j" de "Hoje". No aparelho o inset ja
-          // cuida disso, entao a folga extra e so aqui.
           ...Platform.select({ web: { height: 68, paddingTop: 6, paddingBottom: 12 }, default: {} }),
         },
         sceneStyle: { backgroundColor: colors.background },
@@ -46,6 +47,7 @@ export default function TabsLayout() {
         name="ganhos"
         options={{
           title: 'Ganhos',
+          href: ganhosLiberados ? undefined : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="wallet-outline" color={color} size={size} />
           ),
