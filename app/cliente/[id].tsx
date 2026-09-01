@@ -20,6 +20,7 @@ import { traduzirErro } from '@/lib/supabase';
 import { TECHNIQUE_BY_ID, type TechniqueId } from '@/constants/techniques';
 import { colors, radius, spacing, statusColors, typography } from '@/constants/theme';
 import { useCliente, useClientesStore } from '@/store/clientes';
+import { useLicenseStore } from '@/store/license';
 import {
   calcularDataRetorno,
   descreverPrazo,
@@ -44,9 +45,14 @@ export default function ClienteFormScreen() {
 
   const encontrada = useCliente(id);
   const cliente = novo ? undefined : encontrada;
+  const clientes = useClientesStore((state) => state.clientes);
   const criar = useClientesStore((state) => state.criar);
   const atualizar = useClientesStore((state) => state.atualizar);
   const remover = useClientesStore((state) => state.remover);
+  const license = useLicenseStore((state) => state.license);
+  const configuradoLicenca = useLicenseStore((state) => state.configurado);
+  const limite = useLicenseStore((state) => state.limite);
+  const limiteClientes = configuradoLicenca && license ? limite('clients_limit') : null;
 
   const [nome, setNome] = useState(cliente?.nome ?? '');
   const [whatsapp, setWhatsapp] = useState(cliente ? doFormatoBanco(cliente.whatsapp) : '');
@@ -58,7 +64,6 @@ export default function ClienteFormScreen() {
   const [erros, setErros] = useState<Erros>({});
   const [salvando, setSalvando] = useState(false);
 
-  /** Previsao do retorno enquanto a ficha e preenchida. */
   const previsao = useMemo(() => {
     if (!tecnica || !ultimaAplicacao) return null;
     const dataRetorno = calcularDataRetorno(ultimaAplicacao, tecnica);
@@ -78,6 +83,14 @@ export default function ClienteFormScreen() {
 
   async function salvar() {
     if (!validar() || !tecnica || salvando) return;
+
+    if (novo && limiteClientes != null && clientes.length >= limiteClientes) {
+      Alert.alert(
+        'Limite do plano atingido',
+        `Seu plano ${license?.plan?.toUpperCase() ?? ''} permite até ${limiteClientes} clientes. Faça upgrade na Tadeu Apps para cadastrar mais clientes.`
+      );
+      return;
+    }
 
     const dados = {
       nome,
@@ -138,6 +151,15 @@ export default function ClienteFormScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {novo && limiteClientes != null ? (
+          <View style={styles.limitePlano}>
+            <Ionicons name="people-outline" size={16} color={colors.textMuted} />
+            <Text style={styles.limitePlanoTexto}>
+              Plano {license?.plan?.toUpperCase()}: {clientes.length}/{limiteClientes} clientes
+            </Text>
+          </View>
+        ) : null}
+
         <TextField
           label="Nome completo"
           value={nome}
@@ -222,6 +244,17 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     backgroundColor: colors.background,
   },
+  limitePlano: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  limitePlanoTexto: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
   previsao: { borderRadius: radius.lg, padding: spacing.lg, gap: 2 },
   previsaoTopo: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   previsaoTitulo: {
