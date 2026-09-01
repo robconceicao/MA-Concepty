@@ -20,15 +20,20 @@ const APP_SLUG = 'ma-concepty';
 const CACHE_KEY = '@ma-concepty:tadeu-license-cache';
 const MAX_OFFLINE_MS = 24 * 60 * 60 * 1000;
 
-const baseUrl = (process.env.EXPO_PUBLIC_TADEU_APPS_URL || 'https://tadeu-apps-core-test2.vercel.app').replace(/\/$/, '');
-const supabaseUrl = process.env.EXPO_PUBLIC_TADEU_APPS_SUPABASE_URL || '';
-const supabaseKey = process.env.EXPO_PUBLIC_TADEU_APPS_SUPABASE_ANON_KEY || '';
+const baseUrl = (
+  process.env.EXPO_PUBLIC_TADEU_APPS_URL ||
+  'https://tadeu-apps-core-test2.vercel.app'
+).replace(/\/$/, '');
+const supabaseUrl =
+  process.env.EXPO_PUBLIC_TADEU_APPS_SUPABASE_URL ||
+  'https://chpcviinqqdjfsczvrvf.supabase.co';
+const supabaseKey =
+  process.env.EXPO_PUBLIC_TADEU_APPS_SUPABASE_ANON_KEY ||
+  'sb_publishable_HGw-TdmBFPq4Lg8VvO_AOA_LygQWV01';
 
 export const TadeuLicenseConfigured = Boolean(baseUrl && supabaseUrl && supabaseKey);
 
-const storage = Platform.OS === 'web'
-  ? undefined
-  : AsyncStorage;
+const storage = Platform.OS === 'web' ? undefined : AsyncStorage;
 
 let client: SupabaseClient | null = null;
 
