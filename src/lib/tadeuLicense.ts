@@ -1,3 +1,4 @@
+import { testLicenseBypass } from './licenseBuild';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
@@ -9,7 +10,7 @@ export type LicensedFeature = {
 };
 
 export type TadeuLicense = {
-  plan: 'free' | 'pro' | 'premium' | 'legacy';
+  plan: 'free' | 'pro' | 'premium' | 'legacy' | 'homologation';
   features: LicensedFeature[];
   expiresAt: string | null;
   checkedAt: string;
@@ -62,6 +63,7 @@ async function readCache(): Promise<TadeuLicense | null> {
     const parsed = JSON.parse(raw) as TadeuLicense;
     const checked = new Date(parsed.checkedAt).getTime();
     if (!Number.isFinite(checked) || Date.now() - checked > MAX_OFFLINE_MS) return null;
+    if (parsed.plan === 'homologation') return null;
     if (parsed.expiresAt && new Date(parsed.expiresAt).getTime() <= Date.now()) return null;
     return { ...parsed, offline: true };
   } catch {
@@ -78,6 +80,8 @@ export async function entrarNaTadeuApps(email: string, senha: string) {
 }
 
 export async function buscarLicencaTadeu(): Promise<TadeuLicense> {
+  // Test grant exists only in memory and is never cached as a commercial license.
+  if (testLicenseBypass) return { plan: 'homologation', features: [], expiresAt: null, checkedAt: new Date().toISOString() };
   const auth = authClient();
   if (!auth) throw new Error('TADEU_NOT_CONFIGURED');
   const { data } = await auth.auth.getSession();
@@ -112,12 +116,14 @@ export async function buscarLicencaTadeu(): Promise<TadeuLicense> {
 }
 
 export function temFeature(license: TadeuLicense | null, key: string) {
+  if (testLicenseBypass) return true;
   if (!license) return false;
   if (license.plan === 'legacy') return true;
   return license.features.some((item) => item.key === key);
 }
 
 export function limiteFeature(license: TadeuLicense | null, key: string) {
+  if (testLicenseBypass) return null;
   const item = license?.features.find((feature) => feature.key === key);
   return item?.limitValue ?? null;
 }
