@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBadge } from '@/components/StatusBadge';
 import { TECHNIQUE_BY_ID } from '@/constants/techniques';
 import { colors, radius, shadow, spacing, statusColors, typography } from '@/constants/theme';
-import type { ClienteView } from '@/store/clientes';
+import { useClientesStore, type ClienteView } from '@/store/clientes';
 import { descreverPrazo, formatarData } from '@/utils/dates';
 import { doFormatoBanco } from '@/utils/phone';
 
@@ -19,6 +19,24 @@ type Props = {
  * e o navegador desmonta o card na hidratacao.
  */
 export function ClienteCard({ cliente, onPress, onEnviarLembrete }: Props) {
+  const tentativa = useClientesStore(state => state.lembretesAbertos.includes(cliente.id));
+  const confirmar = useClientesStore(state => state.confirmarLembrete);
+  const registrarEnvio = () => { void confirmar(cliente).catch(() => {
+    const message = 'Não foi possível salvar a confirmação. Tente novamente.';
+    if (Platform.OS === 'web') window.alert(message);
+    else Alert.alert('Não registrado', message);
+  }); };
+  const confirmarEnvio = () => {
+    const message = 'Você concluiu o envio no WhatsApp? Esta confirmação não é comprovante de entrega.';
+    if (Platform.OS === 'web') {
+      if (window.confirm(message)) registrarEnvio();
+      return;
+    }
+    Alert.alert('Confirmar envio manual', message, [
+      { text: 'Ainda não', style: 'cancel' },
+      { text: 'Sim, enviei', onPress: registrarEnvio },
+    ]);
+  };
   const tecnica = TECHNIQUE_BY_ID[cliente.tecnica];
   const cor = statusColors[cliente.status];
 
@@ -28,9 +46,13 @@ export function ClienteCard({ cliente, onPress, onEnviarLembrete }: Props) {
       onEnviarLembrete();
       return;
     }
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${cliente.nome} teve o envio confirmado manualmente hoje. Enviar de novo?`)) onEnviarLembrete();
+      return;
+    }
     Alert.alert(
       'Já avisada hoje',
-      `${cliente.nome} recebeu o lembrete hoje. Enviar de novo?`,
+      `${cliente.nome} teve o envio confirmado manualmente hoje. Enviar de novo?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Enviar de novo', onPress: onEnviarLembrete },
@@ -43,6 +65,7 @@ export function ClienteCard({ cliente, onPress, onEnviarLembrete }: Props) {
       <View style={[styles.stripe, { backgroundColor: cor.fg }]} />
 
       <View style={styles.content}>
+        {tentativa && <Pressable onPress={confirmarEnvio} accessibilityRole="button"><Text style={{ padding: 12, color: colors.primary }}>WhatsApp aberto — confirmar envio manual</Text></Pressable>}
         <Pressable
           onPress={onPress}
           accessibilityRole="button"
@@ -97,7 +120,7 @@ export function ClienteCard({ cliente, onPress, onEnviarLembrete }: Props) {
               color={cliente.avisadaHoje ? colors.textMuted : colors.textInverse}
             />
             <Text style={[styles.lembreteLabel, cliente.avisadaHoje && styles.lembreteLabelFeito]}>
-              {cliente.avisadaHoje ? 'Avisada hoje' : 'Enviar lembrete'}
+              {cliente.avisadaHoje ? 'Envio confirmado hoje' : 'Enviar lembrete'}
             </Text>
           </Pressable>
         </View>

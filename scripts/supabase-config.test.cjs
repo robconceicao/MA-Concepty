@@ -7,7 +7,8 @@ const ts=require('typescript');
 const supabase=require('@supabase/supabase-js');
 const code=ts.transpileModule(fs.readFileSync(path.join(__dirname,'../src/lib/supabase.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;
 function load(env){
- const imports={'react-native-url-polyfill/auto':{},'@react-native-async-storage/async-storage':{},'@supabase/supabase-js':supabase,'react-native':{Platform:{OS:'web'}}};
+ env={EXPO_PUBLIC_DEMO_MODE:'true',...env};
+ const imports={'react-native-url-polyfill/auto':{},'@react-native-async-storage/async-storage':{},'@supabase/supabase-js':supabase,'react-native':{Platform:{OS:'web'}},'expo-constants':{expoConfig:{extra:{appEnvironment:'homologation'}}},'@/core/demoPolicy':{demoPolicy:(configured,environment,requested)=>({demo:!configured&&environment==='homologation'&&requested,blocked:!configured&&!(environment==='homologation'&&requested)})}};
  const context={exports:{},process:{env},console:{warn:()=>{}},WebSocket:globalThis.WebSocket,require:name=>{if(!(name in imports))throw Error(name);return imports[name]}};
  vm.runInNewContext(code,context);
  return context.exports;

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
+import { useDiaAtual } from '@/hooks/useDiaAtual';
 import { MODO_DEMO, traduzirErro } from '@/lib/supabase';
 import { CLIENTES_MOCK } from '@/mocks/clientes';
 import {
@@ -37,18 +38,20 @@ type ClientesState = {
   criar: (input: ClienteInput) => Promise<Cliente>;
   atualizar: (id: string, input: ClienteInput) => Promise<void>;
   remover: (id: string) => Promise<void>;
-  /** Abre o WhatsApp e, se o app abrir, registra o disparo. */
+  /** Abrir WhatsApp não comprova envio. */
   enviarLembrete: (cliente: ClienteView) => Promise<void>;
+  lembretesAbertos: string[];
+  confirmarLembrete: (cliente: ClienteView) => Promise<void>;
   limpar: () => void;
 };
 
-function comPrazo(cliente: Cliente): ClienteView {
-  const diasRestantes = diasAteRetorno(cliente.data_retorno);
+export function comPrazo(cliente: Cliente, agora: Date = new Date()): ClienteView {
+  const diasRestantes = diasAteRetorno(cliente.data_retorno, agora);
   return {
     ...cliente,
     diasRestantes,
     status: statusDoRetorno(diasRestantes),
-    avisadaHoje: foiHoje(cliente.ultimo_lembrete_em),
+    avisadaHoje: foiHoje(cliente.ultimo_lembrete_em, agora),
   };
 }
 
@@ -83,6 +86,7 @@ export const useClientesStore = create<ClientesState>((set, get) => ({
   clientes: MODO_DEMO ? CLIENTES_MOCK : [],
   carregando: false,
   atualizando: false,
+  lembretesAbertos: [],
   erro: null,
   busca: '',
   filtro: 'todas',
@@ -133,34 +137,34 @@ export const useClientesStore = create<ClientesState>((set, get) => ({
 
   enviarLembrete: async (cliente) => {
     const abriu = await abrirWhatsApp(cliente);
-    if (!abriu) return;
+    if (abriu) set(state => ({ lembretesAbertos: [...new Set([...state.lembretesAbertos, cliente.id])] }));
+  },
 
-    const agora = new Date().toISOString();
-    const aplicar = (marcado: Cliente) =>
-      set((state) => ({
-        clientes: state.clientes.map((item) => (item.id === cliente.id ? marcado : item)),
-      }));
-
-    if (MODO_DEMO) {
-      aplicar({ ...cliente, ultimo_lembrete_em: agora });
-      return;
-    }
-
+  confirmarLembrete: async (cliente) => {
+    // Explicit operator confirmation; never a provider delivery receipt.
+    if (!get().lembretesAbertos.includes(cliente.id)) return;
     try {
-      aplicar(await registrarLembrete(cliente.id));
-    } catch {
-      // O aviso ja foi para o WhatsApp; falhar em registrar nao pode travar a tela.
-      aplicar({ ...cliente, ultimo_lembrete_em: agora });
+      const marcado = MODO_DEMO
+        ? { ...cliente, ultimo_lembrete_em: new Date().toISOString() }
+        : await registrarLembrete(cliente.id);
+      set(state => ({
+        clientes: state.clientes.map(item => item.id === cliente.id ? marcado : item),
+        lembretesAbertos: state.lembretesAbertos.filter(id => id !== cliente.id),
+        erro: null,
+      }));
+    } catch (erro) {
+      set({ erro: traduzirErro(erro) });
+      throw erro;
     }
   },
 
   limpar: () =>
-    set({ clientes: MODO_DEMO ? CLIENTES_MOCK : [], busca: '', filtro: 'todas', erro: null }),
+    set({ clientes: MODO_DEMO ? CLIENTES_MOCK : [], busca: '', filtro: 'todas', erro: null, lembretesAbertos: [] }),
 }));
 
 /** Todas as clientes com prazo, ordenadas por urgencia (mais atrasada primeiro). */
 function comPrazoOrdenadas(clientes: Cliente[]): ClienteView[] {
-  return clientes.map(comPrazo).sort((a, b) => a.diasRestantes - b.diasRestantes);
+  return clientes.map(cliente => comPrazo(cliente)).sort((a, b) => a.diasRestantes - b.diasRestantes);
 }
 
 /**
@@ -169,6 +173,7 @@ function comPrazoOrdenadas(clientes: Cliente[]): ClienteView[] {
  * entra em loop infinito.
  */
 export function useClientesFiltradas(): ClienteView[] {
+  const dia = useDiaAtual();
   const clientes = useClientesStore((state) => state.clientes);
   const busca = useClientesStore((state) => state.busca);
   const filtro = useClientesStore((state) => state.filtro);
@@ -180,7 +185,7 @@ export function useClientesFiltradas(): ClienteView[] {
       const combinaFiltro = filtro === 'todas' || cliente.status === filtro;
       return combinaBusca && combinaFiltro;
     });
-  }, [clientes, busca, filtro]);
+  }, [clientes, busca, filtro, dia]);
 }
 
 export type Resumo = {
@@ -195,6 +200,7 @@ export type Resumo = {
 };
 
 export function useResumo(): Resumo {
+  const dia = useDiaAtual();
   const clientes = useClientesStore((state) => state.clientes);
 
   return useMemo(() => {
@@ -207,10 +213,11 @@ export function useResumo(): Resumo {
       avisos: todas.filter((c) => c.status !== 'no_prazo' && !c.avisadaHoje),
       avisadasHoje: todas.filter((c) => c.avisadaHoje).length,
     };
-  }, [clientes]);
+  }, [clientes, dia]);
 }
 
 export function useCliente(id: string): ClienteView | undefined {
+  const dia = useDiaAtual();
   const cliente = useClientesStore((state) => state.clientes.find((item) => item.id === id));
-  return useMemo(() => (cliente ? comPrazo(cliente) : undefined), [cliente]);
+  return useMemo(() => (cliente ? comPrazo(cliente) : undefined), [cliente, dia]);
 }

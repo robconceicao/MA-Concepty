@@ -25,11 +25,10 @@ export function formatarDataExtensa(data: string | Date): string {
 }
 
 /** O timestamp caiu no dia de hoje, no fuso do aparelho? */
-export function foiHoje(iso: string | null | undefined): boolean {
+export function foiHoje(iso: string | null | undefined, agora: Date = new Date()): boolean {
   if (!iso) return false;
   const data = new Date(iso);
   if (Number.isNaN(data.getTime())) return false;
-  const agora = new Date();
   return (
     data.getFullYear() === agora.getFullYear() &&
     data.getMonth() === agora.getMonth() &&
