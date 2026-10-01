@@ -1,17 +1,21 @@
 import 'react-native-url-polyfill/auto';
+import Constants from 'expo-constants';
+import { demoPolicy } from '@/core/demoPolicy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() || undefined;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim() || undefined;
 
 /**
  * Sem as chaves no .env o app roda em modo demonstracao, com os clientes
  * de exemplo em memoria. Assim da para navegar antes de configurar o Supabase.
  */
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
-export const MODO_DEMO = !isSupabaseConfigured;
+const policy = demoPolicy(isSupabaseConfigured, Constants.expoConfig?.extra?.appEnvironment, process.env.EXPO_PUBLIC_DEMO_MODE === 'true');
+export const MODO_DEMO = policy.demo;
+export const CONFIGURACAO_PENDENTE = policy.blocked;
 
 if (MODO_DEMO) {
   console.warn(

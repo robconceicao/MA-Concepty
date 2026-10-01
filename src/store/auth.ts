@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js';
 import { create } from 'zustand';
-import { MODO_DEMO, supabase, traduzirErro } from '@/lib/supabase';
+import { CONFIGURACAO_PENDENTE, MODO_DEMO, supabase, traduzirErro } from '@/lib/supabase';
 
 type AuthState = {
   sessao: Session | null;
@@ -26,6 +26,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   /** Devolve a funcao de cancelar a escuta de mudancas de sessao. */
   inicializar: () => {
     if (MODO_DEMO) return () => {};
+    if (CONFIGURACAO_PENDENTE) { set({ iniciando: false, sessao: null }); return () => {}; }
 
     supabase.auth
       .getSession()

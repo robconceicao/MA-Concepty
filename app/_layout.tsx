@@ -4,8 +4,9 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { CONFIGURACAO_PENDENTE, MODO_DEMO } from '@/lib/supabase';
 import { AvisoDeAtualizacao } from '@/components/AvisoDeAtualizacao';
 import { fontAssets, fonts } from '@/constants/fonts';
 import { colors } from '@/constants/theme';
@@ -140,6 +141,8 @@ export default function RootLayout() {
 
   if (!fontesCarregadas && !erroFontes && Platform.OS !== 'web') return null;
 
+  if (CONFIGURACAO_PENDENTE) return <View style={styles.carregando}><Text>Configuração indisponível. Este build exige conexão com o ambiente de teste. Nenhum dado foi carregado.</Text></View>;
+
   if (iniciando || (sessao && configuradoLicenca && iniciandoLicenca)) {
     return (
       <View style={styles.carregando}>
@@ -151,6 +154,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
+      {MODO_DEMO && <Text accessibilityRole="alert" style={{ padding: 12, backgroundColor: "#fff1c2" }}>DEMONSTRAÇÃO — dados temporários; serão perdidos ao reiniciar. Não valida a sincronização.</Text>}
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: colors.background },

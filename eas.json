@@ -13,6 +13,10 @@
       },
       "ios": {
         "simulator": true
+      },
+      "env": {
+        "APP_ENV": "homologation",
+        "TEST_LICENSE_BYPASS": "true"
       }
     },
     "preview": {
@@ -20,6 +24,10 @@
       "environment": "preview",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "APP_ENV": "homologation",
+        "TEST_LICENSE_BYPASS": "true"
       }
     },
     "production": {
@@ -27,6 +35,10 @@
       "environment": "production",
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "APP_ENV": "production",
+        "TEST_LICENSE_BYPASS": "false"
       }
     }
   },

@@ -3,7 +3,6 @@ import {
   buscarLicencaTadeu,
   entrarNaTadeuApps,
   limiteFeature,
-  TadeuLicenseConfigured,
   temFeature,
   type TadeuLicense,
 } from '@/lib/tadeuLicense';
@@ -23,16 +22,12 @@ type LicenseState = {
 
 export const useLicenseStore = create<LicenseState>((set, get) => ({
   license: null,
-  iniciando: TadeuLicenseConfigured,
+  iniciando: true,
   entrando: false,
   erro: null,
-  configurado: TadeuLicenseConfigured,
+  configurado: true,
 
   inicializar: async () => {
-    if (!TadeuLicenseConfigured) {
-      set({ iniciando: false });
-      return;
-    }
     set({ iniciando: true, erro: null });
     try {
       const license = await buscarLicencaTadeu();
