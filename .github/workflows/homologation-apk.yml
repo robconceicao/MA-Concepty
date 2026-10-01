@@ -13,8 +13,8 @@ jobs:
       APP_ENV: homologation
       TEST_LICENSE_BYPASS: 'true'
       EXPO_NO_TELEMETRY: '1'
-      EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
-      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+      EXPO_PUBLIC_SUPABASE_URL: ${{ vars.HOMOLOGATION_SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.HOMOLOGATION_SUPABASE_PUBLISHABLE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,8 +29,11 @@ jobs:
           packages: 'platform-tools'
           log-accepted-android-sdk-licenses: false
       - run: npm ci --no-audit --no-fund
-      - run: node --test scripts/license-build-config.test.cjs scripts/license-service.test.cjs scripts/supabase-config.test.cjs
+      - run: node --test scripts/license-build-config.test.cjs scripts/license-service.test.cjs scripts/supabase-config.test.cjs scripts/audit-regressions.test.cjs
       - run: npm run typecheck
+      - name: Require the verified homologation database
+        run: |
+          node -e "if(process.env.EXPO_PUBLIC_SUPABASE_URL!=='https://zixztzcjarzasyglopkd.supabase.co'||!process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.startsWith('sb_publishable_'))throw Error('Homologation database configuration missing')"
       - name: Generate Android project
         run: npx expo prebuild --platform android --no-install
       - name: Build test APK

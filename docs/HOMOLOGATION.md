@@ -22,3 +22,12 @@ Configure APP_ENV=homologation e TEST_LICENSE_BYPASS=true somente na instância 
 3. Nos servidores, remover TEST_LICENSE_BYPASS e fixar APP_ENV=production. Validar conta sem licença, expirada, cancelada, offline e com limite esgotado.
 4. Confirmar assinatura Android oficial, applicationId e canal de distribuição production. Testar instalação e atualização em aparelho real.
 5. Billing permanece BILLING_MODE=test e BILLING_PROVIDER=mock durante esta entrega. A ativação financeira real é uma etapa posterior explícita.
+
+## Validação de 2026-10-01
+
+Versão de teste 1.0.1 (2). Banco operacional de homologação verificado:
+`zixztzcjarzasyglopkd`; RLS por conta e view com security_invoker. A CI exige URL
+e publishable key desse projeto em variáveis HOMOLOGATION_SUPABASE_*.
+Tipos e 11 testes passaram. WhatsApp continua exigindo confirmação manual de envio.
+Produção: desabilitar TEST_LICENSE_BYPASS, aprovar banco e testes em aparelho antes
+de habilitar catálogo/assinaturas. Nenhum billing real está autorizado.
